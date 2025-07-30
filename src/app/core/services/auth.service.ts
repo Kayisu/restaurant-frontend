@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { finalize } from 'rxjs/operators';
 
 interface DecodedToken {
   userId: number;
@@ -11,12 +12,9 @@ interface DecodedToken {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-
-
-  //private tokenKey = 'auth_token';
-
   isAuthenticated = signal<boolean>(false);
   user = signal<DecodedToken | null>(null);
+  loading = signal<boolean>(false);
 
   private api = 'http://localhost:5001/api';
 
@@ -30,9 +28,15 @@ export class AuthService {
 
 
   login(staff_name: string, password: string) {
-    return this.http.post(`${this.api}/auth/login`, { staff_name, password }, {
+    this.loading.set(true);
+    const loginRequest = this.http.post(`${this.api}/auth/login`, { staff_name, password }, {
       withCredentials: true
     });
+    
+    // Add finalize to always set loading to false
+    return loginRequest.pipe(
+      finalize(() => this.loading.set(false))
+    );
   }
 
   // storeToken(token: string) {
