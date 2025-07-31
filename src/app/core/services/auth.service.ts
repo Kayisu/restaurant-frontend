@@ -39,6 +39,24 @@ export class AuthService {
     );
   }
 
+  register(userData: { staff_name: string; password: string; role_id: number; email?: string; phone?: string }) {
+    return this.http.post(`${this.api}/auth/register`, userData, {
+      withCredentials: true
+    });
+  }
+
+  getUsers() {
+    return this.http.get(`${this.api}/users`, {
+      withCredentials: true
+    });
+  }
+
+  deleteUser(userId: number | string) {
+    return this.http.delete(`${this.api}/users/${userId}`, {
+      withCredentials: true
+    });
+  }
+
   // storeToken(token: string) {
   //   localStorage.setItem(this.tokenKey, token);
   //   this.isAuthenticated.set(true);
