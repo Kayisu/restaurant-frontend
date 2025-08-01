@@ -1,7 +1,8 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 interface User {
   id?: number;
@@ -18,6 +19,7 @@ interface User {
   standalone: true,
   selector: 'app-admin-settings',
   imports: [CommonModule, FormsModule],
+  styleUrl: './styles/admin-settings.component.scss',
   template: `
     <div class="settings-container">
       <div class="settings-sections">
@@ -32,8 +34,9 @@ interface User {
           </div>
           <div class="setting-item">
             <label>View All Users</label>
-            <button class="btn-secondary" (click)="toggleUserList()">
+            <button class="btn-primary" (click)="toggleUserList()">
               {{ showUserList ? 'Hide Users' : 'Show Users' }}
+              <span *ngIf="!showUserList && users.length > 0" class="user-count">({{ users.length }})</span>
             </button>
           </div>
         </div>
@@ -52,43 +55,251 @@ interface User {
           </div>
           
           <div *ngIf="shouldShowUserTable" class="user-table-container">
-            <table class="user-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let user of users" class="user-row">
-                  <td>{{ getUserId(user) }}</td>
-                  <td class="user-name">{{ user.staff_name }}</td>
-                  <td>
-                    <span class="role-badge" [class]="getRoleClass(user.role_id)">
-                      {{ getRoleName(user.role_id) }}
-                    </span>
-                  </td>
-                  <td>{{ user.email || '-' }}</td>
-                  <td>{{ user.phone || '-' }}</td>
-                  <td>{{ formatDate(user.created_at) }}</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-warning btn-small" (click)="editUser(user)">
-                        Edit
-                      </button>
-                      <button class="btn-danger btn-small" (click)="deleteUser(user)" [disabled]="getUserId(user) === currentUserId">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <!-- Admin Users Section -->
+            <div class="user-section" *ngIf="adminUsers.length > 0">
+              <div class="section-header">
+                <h3 class="section-title">👑 Administrators ({{ adminUsers.length }})</h3>
+                <div class="section-divider"></div>
+              </div>
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <ng-container *ngFor="let user of adminUsers">
+                    <tr class="user-row admin-row">
+                      <td>{{ getUserId(user) }}</td>
+                      <td class="user-name">{{ user.staff_name }}</td>
+                      <td>
+                        <span class="role-badge" [class]="getRoleClass(user.role_id)">
+                          {{ getRoleName(user.role_id) }}
+                        </span>
+                      </td>
+                      <td>{{ user.email || '-' }}</td>
+                      <td>{{ user.phone || '-' }}</td>
+                      <td>{{ formatDate(user.created_at) }}</td>
+                      <td>
+                        <div class="action-buttons">
+                          <button class="btn-warning btn-small" (click)="startEdit(user)">
+                            {{ editingUserId === getUserId(user) ? 'Cancel' : 'Edit' }}
+                          </button>
+                          <button 
+                            class="btn-danger btn-small" 
+                            (click)="deleteUser(user)" 
+                            [disabled]="isCurrentUser(user)"
+                            [title]="isCurrentUser(user) ? 'You cannot delete your own account' : 'Delete user'"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- Inline Edit Form for Admins -->
+                    <tr *ngIf="editingUserId === getUserId(user)" class="edit-form-row">
+                      <td colspan="7">
+                        <div class="inline-edit-form">
+                          <h4>Edit Admin: {{ user.staff_name }}</h4>
+                          
+                          <div class="edit-form-grid">
+                            <div class="form-group">
+                              <label for="edit_staff_name">Username</label>
+                              <input 
+                                id="edit_staff_name"
+                                type="text" 
+                                [(ngModel)]="editForm.staff_name"
+                                placeholder="Enter username"
+                              />
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_email">Email</label>
+                              <input 
+                                id="edit_email"
+                                type="email" 
+                                [(ngModel)]="editForm.email"
+                                placeholder="Enter email"
+                              />
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_phone">Phone</label>
+                              <input 
+                                id="edit_phone"
+                                type="tel" 
+                                [(ngModel)]="editForm.phone"
+                                placeholder="Enter phone"
+                              />
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_role">Role</label>
+                              <select id="edit_role" [(ngModel)]="editForm.role_id" [disabled]="isEditingSelfRole(user)">
+                                <option value="1">Admin</option>
+                                <option value="2">Staff</option>
+                              </select>
+                              <small class="role-warning" *ngIf="isEditingSelfRole(user)">
+                                ⚠️ You cannot change your own role for security reasons
+                              </small>
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_password">New Password (optional)</label>
+                              <input 
+                                id="edit_password"
+                                type="password" 
+                                [(ngModel)]="editForm.password"
+                                placeholder="Leave empty to keep current password"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div class="edit-form-actions">
+                            <button class="btn-success" (click)="saveEdit(user)">
+                              Save Changes
+                            </button>
+                            <button class="btn-cancel" (click)="cancelEdit()">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Staff Users Section -->
+            <div class="user-section" *ngIf="staffUsers.length > 0">
+              <div class="section-header">
+                <h3 class="section-title">👥 Staff Members ({{ staffUsers.length }})</h3>
+                <div class="section-divider"></div>
+              </div>
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <ng-container *ngFor="let user of staffUsers">
+                    <tr class="user-row staff-row">
+                      <td>{{ getUserId(user) }}</td>
+                      <td class="user-name">{{ user.staff_name }}</td>
+                      <td>
+                        <span class="role-badge" [class]="getRoleClass(user.role_id)">
+                          {{ getRoleName(user.role_id) }}
+                        </span>
+                      </td>
+                      <td>{{ user.email || '-' }}</td>
+                      <td>{{ user.phone || '-' }}</td>
+                      <td>{{ formatDate(user.created_at) }}</td>
+                      <td>
+                        <div class="action-buttons">
+                          <button class="btn-warning btn-small" (click)="startEdit(user)">
+                            {{ editingUserId === getUserId(user) ? 'Cancel' : 'Edit' }}
+                          </button>
+                          <button 
+                            class="btn-danger btn-small" 
+                            (click)="deleteUser(user)" 
+                            [disabled]="isCurrentUser(user)"
+                            [title]="isCurrentUser(user) ? 'You cannot delete your own account' : 'Delete user'"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- Inline Edit Form for Staff -->
+                    <tr *ngIf="editingUserId === getUserId(user)" class="edit-form-row">
+                      <td colspan="7">
+                        <div class="inline-edit-form">
+                          <h4>Edit Staff: {{ user.staff_name }}</h4>
+                          
+                          <div class="edit-form-grid">
+                            <div class="form-group">
+                              <label for="edit_staff_name">Username</label>
+                              <input 
+                                id="edit_staff_name"
+                                type="text" 
+                                [(ngModel)]="editForm.staff_name"
+                                placeholder="Enter username"
+                              />
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_email">Email</label>
+                              <input 
+                                id="edit_email"
+                                type="email" 
+                                [(ngModel)]="editForm.email"
+                                placeholder="Enter email"
+                              />
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_phone">Phone</label>
+                              <input 
+                                id="edit_phone"
+                                type="tel" 
+                                [(ngModel)]="editForm.phone"
+                                placeholder="Enter phone"
+                              />
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_role">Role</label>
+                              <select id="edit_role" [(ngModel)]="editForm.role_id" [disabled]="isEditingSelfRole(user)">
+                                <option value="1">Admin</option>
+                                <option value="2">Staff</option>
+                              </select>
+                              <small class="role-warning" *ngIf="isEditingSelfRole(user)">
+                                ⚠️ You cannot change your own role for security reasons
+                              </small>
+                            </div>
+                            
+                            <div class="form-group">
+                              <label for="edit_password">New Password (optional)</label>
+                              <input 
+                                id="edit_password"
+                                type="password" 
+                                [(ngModel)]="editForm.password"
+                                placeholder="Leave empty to keep current password"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div class="edit-form-actions">
+                            <button class="btn-success" (click)="saveEdit(user)">
+                              Save Changes
+                            </button>
+                            <button class="btn-cancel" (click)="cancelEdit()">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
+                </tbody>
+              </table>
+            </div>
           </div>
           <div class="user-list-actions">
             <button class="btn-secondary" (click)="refreshUserList()" [disabled]="loadingUsers">
@@ -205,361 +416,27 @@ interface User {
       </div>
 
       <div class="settings-actions">
-        <button class="btn-success" (click)="saveSettings()">Save Changes</button>
-        <button class="btn-cancel" (click)="resetSettings()">Cancel Changes</button>
       </div>
     </div>
-  `,
-  styles: [`
-    .settings-container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 2rem;
-      position: relative;
-    }
-
-    .settings-sections {
-      display: grid;
-      gap: 2rem;
-      margin-bottom: 3rem;
-    }
-
-    .settings-section {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border: 1px solid #e1e5e9;
-    }
-
-    .settings-section h2 {
-      color: #333;
-      margin-bottom: 1.5rem;
-      font-size: 1.3rem;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 0.5rem;
-    }
-
-    .setting-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: #f8f9fa;
-      border-radius: 6px;
-    }
-
-    .setting-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .setting-item label {
-      font-weight: 500;
-      color: #333;
-      flex: 1;
-    }
-
-    .setting-item input[type="text"],
-    .setting-item input[type="number"],
-    .setting-item select {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      width: 200px;
-    }
-
-    .setting-item input[type="checkbox"] {
-      margin-left: 0.5rem;
-    }
-
-    .btn-primary {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .btn-cancel {
-        background: rgba(167, 40, 40, 1);
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 500;
-        font-size: 1.1rem;
-    }
-
-    .btn-success {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 1.1rem;
-    }
-
-    .btn-warning {
-      background: #ffc107;
-      color: #212529;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .btn-danger {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .btn-primary:hover { background: #0056b3; }
-    .btn-secondary:hover { background: #545b62; }
-    .btn-success:hover { background: #218838; }
-    .btn-warning:hover { background: #e0a800; }
-    .btn-danger:hover { background: #c82333; }
-
-    /* Form Styles */
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      color: #333;
-      font-size: 0.9rem;
-    }
-
-    .form-group input,
-    .form-group select {
-      padding: 0.75rem;
-      border: 2px solid #e1e5e9;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: border-color 0.2s ease;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-    }
-
-    .form-group input.ng-invalid.ng-touched,
-    .form-group select.ng-invalid.ng-touched {
-      border-color: #dc3545;
-    }
-
-    .error-message {
-      color: #dc3545;
-      font-size: 0.8rem;
-      font-weight: 500;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      padding-top: 1rem;
-      border-top: 1px solid #e1e5e9;
-    }
-
-    .btn-cancel {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 1.1rem;
-    }
-
-    .btn-cancel:hover {
-      background: #c82333;
-    }
-
-    /* User List Styles */
-    .user-list-actions {
-      margin-top: 1rem;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .loading-message, .no-users-message {
-      text-align: center;
-      padding: 2rem;
-      color: #666;
-      font-style: italic;
-    }
-
-    .user-table-container {
-      overflow-x: auto;
-    }
-
-    .user-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .user-table th,
-    .user-table td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #e1e5e9;
-    }
-
-    .user-table th {
-      background: #f8f9fa;
-      font-weight: 600;
-      color: #333;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .user-table tbody tr:hover {
-      background: #f8f9fa;
-    }
-
-    .user-name {
-      font-weight: 600;
-      color: #333;
-    }
-
-    .role-badge {
-      padding: 0.25rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .role-admin {
-      background: #dc3545;
-      color: white;
-    }
-
-    .role-staff {
-      background: #007bff;
-      color: white;
-    }
-
-    .role-unknown {
-      background: #6c757d;
-      color: white;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .btn-small {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.8rem;
-      border-radius: 4px;
-    }
-
-    .settings-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      padding-top: 2rem;
-      border-top: 1px solid #e1e5e9;
-    }
-
-    @media (max-width: 768px) {
-      .settings-container {
-        padding: 1rem;
-        padding-right: 1rem; /* Remove extra padding on mobile */
-      }
-
-      .setting-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .form-actions {
-        flex-direction: column;
-      }
-
-      .settings-actions {
-        flex-direction: column;
-      }
-
-      .user-table-container {
-        font-size: 0.8rem;
-      }
-
-      .user-table th,
-      .user-table td {
-        padding: 0.5rem 0.25rem;
-      }
-
-      .action-buttons {
-        flex-direction: column;
-        gap: 0.25rem;
-      }
-
-      .btn-small {
-        font-size: 0.7rem;
-        padding: 0.2rem 0.4rem;
-      }
-    }
-  `]
+  `
 })
-export class AdminSettingsComponent {
+export class AdminSettingsComponent implements OnInit {
   showAddUserForm = false;
   showUserList = false;
   isRegistering = false;
   loadingUsers = false;
   users: User[] = [];
   currentUserId: number | null = null;
+  
+  // Edit form states
+  editingUserId: number | string | null = null;
+  editForm = {
+    staff_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role_id: 2  // Default to Staff (2), not Admin (1)
+  };
   
   newUser = {
     staff_name: '',
@@ -577,18 +454,51 @@ export class AdminSettingsComponent {
     return !this.loadingUsers && this.users.length === 0;
   }
 
+  get adminUsers(): User[] {
+    return this.users.filter(user => user.role_id === 1);
+  }
+
+  get staffUsers(): User[] {
+    return this.users.filter(user => user.role_id === 2);
+  }
+
   getUserId(user: User): number | string {
     return user.id || user.staff_id || user.user_id || '-';
   }
 
-  constructor(private authService: AuthService, private cdr: ChangeDetectorRef) {
+  isEditingSelfRole(user: User): boolean {
+    const currentUser = this.authService.user();
+    const userId = this.getUserId(user);
+    return !!(currentUser && (currentUser.userId === userId || 
+                             currentUser.userId.toString() === userId.toString()));
+  }
+
+  isCurrentUser(user: User): boolean {
+    const userId = this.getUserId(user);
+    return userId === this.currentUserId || userId.toString() === this.currentUserId?.toString();
+  }
+
+  constructor(private authService: AuthService, private cdr: ChangeDetectorRef, private toastService: ToastService) {
     // Get current user ID to prevent self-deletion
     const user = this.authService.user();
     this.currentUserId = user?.userId || null;
   }
 
+  ngOnInit(): void {
+    // Load users after component initialization to avoid ExpressionChangedAfterItHasBeenCheckedError
+    setTimeout(() => {
+      this.refreshUserList();
+    }, 0);
+  }
+
   toggleAddUserForm(): void {
     this.showAddUserForm = !this.showAddUserForm;
+    
+    // Close user list when opening add user form
+    if (this.showAddUserForm && this.showUserList) {
+      this.showUserList = false;
+    }
+    
     if (!this.showAddUserForm) {
       this.resetForm();
     }
@@ -596,7 +506,14 @@ export class AdminSettingsComponent {
 
   toggleUserList(): void {
     this.showUserList = !this.showUserList;
-    if (this.showUserList && this.users.length === 0) {
+    
+    // Close add user form when opening user list
+    if (this.showUserList && this.showAddUserForm) {
+      this.showAddUserForm = false;
+      this.resetForm();
+    }
+    
+    if (this.showUserList && this.users.length === 0 && !this.loadingUsers) {
       this.refreshUserList();
     }
   }
@@ -659,15 +576,190 @@ export class AdminSettingsComponent {
     }
   }
 
+  startEdit(user: User): void {
+    if (this.editingUserId === this.getUserId(user)) {
+      // Cancel edit if already editing this user
+      this.cancelEdit();
+    } else {
+      // Start editing this user
+      this.editingUserId = this.getUserId(user);
+      this.editForm = {
+        staff_name: user.staff_name,
+        email: user.email || '',
+        phone: user.phone || '',
+        password: '',
+        role_id: user.role_id
+      };
+    }
+  }
+
+  cancelEdit(): void {
+    this.editingUserId = null;
+    this.editForm = {
+      staff_name: '',
+      email: '',
+      phone: '',
+      password: '',
+      role_id: 2  // Default to Staff (2), not Admin (1)
+    };
+  }
+
+  async saveEdit(user: User): Promise<void> {
+    const userId = this.getUserId(user);
+    if (userId === '-') {
+      this.toastService.error('Update Failed! ❌', 'Cannot update user: Invalid user ID');
+      return;
+    }
+
+    // Prepare updates object with only changed fields
+    const updates: any = {};
+    
+    if (this.editForm.staff_name !== user.staff_name && this.editForm.staff_name.trim()) {
+      updates.staff_name = this.editForm.staff_name.trim();
+    }
+    
+    if (this.editForm.email !== (user.email || '') && this.editForm.email.trim()) {
+      updates.email = this.editForm.email.trim();
+    }
+    
+    if (this.editForm.phone !== (user.phone || '') && this.editForm.phone.trim()) {
+      updates.phone = this.editForm.phone.trim();
+    }
+    
+    if (this.editForm.role_id !== user.role_id) {
+      // Check if admin is trying to change their own role
+      const currentUser = this.authService.user();
+      const isEditingSelf = currentUser && (currentUser.userId === userId || 
+                                           currentUser.userId.toString() === userId.toString());
+      
+      if (isEditingSelf) {
+        this.toastService.error('Security Error! ❌', 'You cannot change your own role for security reasons');
+        return;
+      }
+      
+      updates.role_id = this.editForm.role_id;
+    }
+    
+    if (this.editForm.password && this.editForm.password.length >= 6) {
+      updates.password = this.editForm.password;
+    } else if (this.editForm.password && this.editForm.password.length < 6) {
+      this.toastService.error('Validation Error! ❌', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    // Check if there are any changes
+    if (Object.keys(updates).length === 0) {
+      this.toastService.info('No Changes! ℹ️', 'No changes detected to update');
+      this.cancelEdit();
+      return;
+    }
+
+    try {
+      // Check if admin is editing themselves
+      const currentUser = this.authService.user();
+      const isEditingSelf = currentUser && (currentUser.userId === userId || 
+                                           currentUser.userId.toString() === userId.toString());
+      
+      if (isEditingSelf && this.editForm.password) {
+        // Admin editing their own password - this requires special handling
+        // For now, show a toast that password change should be done via staff settings
+        this.toastService.warning('Password Change! ⚠️', 'Please use Staff Settings to change your own password securely');
+        
+        // Remove password from updates and continue with other fields
+        const { password, ...updatesWithoutPassword } = updates;
+        if (Object.keys(updatesWithoutPassword).length > 0) {
+          await this.authService.adminUpdateCredentials(userId, updatesWithoutPassword).toPromise();
+          this.toastService.success('Profile Updated! 📝', `Profile updated successfully! Password change should be done via Staff Settings.`);
+          
+          // Refresh session for self-edit to update user menu
+          setTimeout(() => {
+            this.authService.refreshUserFromToken();
+          }, 300);
+        }
+      } else {
+        // Admin editing other users OR admin editing own profile without password
+        await this.authService.adminUpdateCredentials(userId, updates).toPromise();
+        this.toastService.success('User Updated! 📝', `User "${user.staff_name}" updated successfully!`);
+        
+        // If admin edited themselves (without password), refresh session
+        if (isEditingSelf) {
+          setTimeout(() => {
+            this.authService.refreshUserFromToken();
+          }, 300);
+        }
+      }
+      
+      this.cancelEdit();
+      this.refreshUserList();
+    } catch (error: any) {
+      console.error('Failed to update user:', error);
+      
+      // Handle specific error messages for user updates
+      let errorMessage = 'Failed to update user. Please try again.';
+      
+      if (error?.status === 400) {
+        // Bad request - likely duplicate username or validation error
+        if (error?.error?.message?.includes('already exists') || 
+            error?.error?.message?.includes('duplicate') ||
+            error?.error?.message?.includes('unique')) {
+          errorMessage = `Username "${this.editForm.staff_name}" already exists. Please choose a different username.`;
+        } else if (error?.error?.message) {
+          errorMessage = error.error.message;
+        } else {
+          errorMessage = 'Invalid data provided. Please check all fields and try again.';
+        }
+      } else if (error?.status === 401) {
+        errorMessage = 'Authentication required. Please login again.';
+      } else if (error?.status === 403) {
+        errorMessage = 'You don\'t have permission to update this user.';
+      } else if (error?.status === 409) {
+        // Conflict - duplicate entry
+        errorMessage = `Username "${this.editForm.staff_name}" already exists. Please choose a different username.`;
+      } else if (error?.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      this.toastService.error('Update Failed! ❌', errorMessage);
+    }
+  }
+
   editUser(user: User): void {
-    // For now, just show an alert. We can implement a proper edit form later
-    alert(`Edit functionality for ${user.staff_name} will be implemented soon.`);
+    // Keep old method for compatibility, redirect to new method
+    this.startEdit(user);
+  }
+
+  async updateUserCredentials(user: User, updates: any): Promise<void> {
+    const userId = this.getUserId(user);
+    if (userId === '-') {
+      this.toastService.error('Update Failed! ❌', 'Cannot update user: Invalid user ID');
+      return;
+    }
+
+    try {
+      await this.authService.adminUpdateCredentials(userId, updates).toPromise();
+      this.toastService.success('User Updated! 📝', `User "${user.staff_name}" updated successfully!`);
+      
+      // Refresh user list to show changes
+      this.refreshUserList();
+    } catch (error: any) {
+      console.error('Failed to update user:', error);
+      this.toastService.error('Update Failed! ❌', error.error?.message || 'Failed to update user. Please try again.');
+    }
   }
 
   async deleteUser(user: User): Promise<void> {
     const userId = this.getUserId(user);
-    if (userId === this.currentUserId || userId === '-') {
-      alert('You cannot delete your own account or users without valid IDs.');
+    
+    // Prevent self-deletion
+    if (this.isCurrentUser(user)) {
+      this.toastService.error('Delete Denied! ❌', 'You cannot delete your own account for security reasons.');
+      return;
+    }
+    
+    if (userId === '-') {
+      this.toastService.error('Delete Failed! ❌', 'Cannot delete user: Invalid user ID');
       return;
     }
 
@@ -680,7 +772,7 @@ export class AdminSettingsComponent {
       
       // Remove from local array after successful API call
       this.users = this.users.filter(u => this.getUserId(u) !== userId);
-      alert(`User "${user.staff_name}" has been successfully deleted.`);
+      this.toastService.success('User Deleted! 🗑️', `User "${user.staff_name}" has been successfully deleted.`);
       
     } catch (error: any) {
       console.error('Failed to delete user:', error);
@@ -700,7 +792,7 @@ export class AdminSettingsComponent {
         errorMessage = `Delete failed: ${error.message}`;
       }
       
-      alert(errorMessage);
+      this.toastService.error('Delete Failed! ❌', errorMessage);
       
       // Refresh the list to ensure consistency with backend
       this.refreshUserList();
@@ -736,13 +828,16 @@ export class AdminSettingsComponent {
       // Call the real API
       const response = await this.authService.register(userData).toPromise();
       
-      alert(`User "${this.newUser.staff_name}" has been successfully created!`);
+      this.toastService.success('User Created! 👤', `User "${this.newUser.staff_name}" has been successfully created!`);
       this.resetForm();
       this.showAddUserForm = false;
       
-      // Refresh user list if it's currently shown
-      if (this.showUserList) {
-        this.refreshUserList();
+      // Refresh user list to show the new user
+      this.refreshUserList();
+      
+      // If user list is not currently shown, show it to display the new user
+      if (!this.showUserList) {
+        this.showUserList = true;
       }
       
     } catch (error: any) {
@@ -751,31 +846,33 @@ export class AdminSettingsComponent {
       // Handle specific error messages from backend
       let errorMessage = 'Registration failed. Please try again.';
       
-      if (error?.status === 401) {
+      if (error?.status === 400) {
+        // Bad request - likely duplicate username or validation error
+        if (error?.error?.message?.includes('already exists') || 
+            error?.error?.message?.includes('duplicate') ||
+            error?.error?.message?.includes('unique')) {
+          errorMessage = `Username "${this.newUser.staff_name}" already exists. Please choose a different username.`;
+        } else if (error?.error?.message) {
+          errorMessage = error.error.message;
+        } else {
+          errorMessage = 'Invalid data provided. Please check all fields and try again.';
+        }
+      } else if (error?.status === 401) {
         errorMessage = 'Authentication required. Please login again.';
       } else if (error?.status === 403) {
         errorMessage = 'Admin access required. You don\'t have permission to create users.';
+      } else if (error?.status === 409) {
+        // Conflict - duplicate entry
+        errorMessage = `Username "${this.newUser.staff_name}" already exists. Please choose a different username.`;
       } else if (error?.error?.message) {
         errorMessage = `${error.error.message}`;
       } else if (error?.message) {
         errorMessage = `${error.message}`;
       }
       
-      alert(errorMessage);
+      this.toastService.error('Registration Failed! ❌', errorMessage);
     } finally {
       this.isRegistering = false;
-    }
-  }
-
-  saveSettings(): void {
-    // Implement save logic here for user management
-    console.log('Saving user management settings');
-    alert('User management settings saved successfully!');
-  }
-
-  resetSettings(): void {
-    if (confirm('Are you sure you want to reset user management settings to defaults?')) {
-      console.log('User management settings reset to defaults');
     }
   }
 }

@@ -1,382 +1,309 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-staff-settings',
   imports: [CommonModule, FormsModule],
+  styleUrl: './styles/staff-settings.component.scss',
   template: `
     <div class="settings-container">
       <div class="settings-sections">
         <!-- Profile Information -->
         <div class="settings-section">
           <h2>Profile Information</h2>
+          
           <div class="setting-item">
-            <label for="displayName">Display Name</label>
+            <label for="staff_name">Username</label>
             <input 
-              id="displayName" 
+              id="staff_name" 
               type="text" 
-              [(ngModel)]="profileSettings.displayName"
-              placeholder="How others see your name"
+              [(ngModel)]="profileForm.staff_name"
+              placeholder="Enter username"
             />
           </div>
+          
           <div class="setting-item">
             <label for="email">Email Address</label>
             <input 
               id="email" 
               type="email" 
-              [(ngModel)]="profileSettings.email"
-              placeholder="your.email@restaurant.com"
+              [(ngModel)]="profileForm.email"
+              placeholder="yourmail@example.com"
             />
           </div>
+          
           <div class="setting-item">
             <label for="phone">Phone Number</label>
             <input 
               id="phone" 
               type="tel" 
-              [(ngModel)]="profileSettings.phone"
+              [(ngModel)]="profileForm.phone"
               placeholder="+90 555 123 4567"
             />
+          </div>
+
+          <div class="setting-item">
+            <label for="profile_current_password">Current Password (Required for Profile Updates)</label>
+            <input 
+              id="profile_current_password" 
+              type="password" 
+              [(ngModel)]="profileForm.current_password"
+              placeholder="Enter your current password"
+            />
+          </div>
+
+          <!-- Profile Actions -->
+          <div class="section-actions">
+            <button 
+              class="btn-success" 
+              (click)="updateProfile()"
+              [disabled]="loading() || !profileForm.current_password"
+            >
+              <span *ngIf="!profileLoading()">Save Changes</span>
+              <span *ngIf="profileLoading()">Saving...</span>
+            </button>
+            
+            <button 
+              class="btn-cancel" 
+              (click)="resetProfileForm()"
+              [disabled]="loading()"
+            >
+              Reset Form
+            </button>
           </div>
         </div>
 
         <!-- Security Settings -->
         <div class="settings-section">
-          <h2>Security</h2>
+          <h2>Change Password</h2>
+          
           <div class="setting-item">
-            <label>Change Password</label>
-            <button class="btn-primary" (click)="changePassword()">Update Password</button>
+            <label for="current_password">Current Password</label>
+            <input 
+              id="current_password" 
+              type="password" 
+              [(ngModel)]="passwordForm.current_password"
+              placeholder="Enter current password"
+            />
           </div>
+          
           <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="securitySettings.enableNotifications">
-              Enable login notifications
-            </label>
+            <label for="new_password">New Password</label>
+            <input 
+              id="new_password" 
+              type="password" 
+              [(ngModel)]="passwordForm.new_password"
+              placeholder="Enter new password (min 6 characters)"
+            />
           </div>
+          
           <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="securitySettings.autoLogout">
-              Auto logout after inactivity
-            </label>
+            <label for="confirm_password">Confirm New Password</label>
+            <input 
+              id="confirm_password" 
+              type="password" 
+              [(ngModel)]="passwordForm.confirm_password"
+              placeholder="Confirm new password"
+              [class.error-input]="passwordForm.confirm_password && passwordForm.new_password && passwordForm.confirm_password !== passwordForm.new_password"
+            />
+          </div>
+
+          <!-- Password Validation Messages -->
+          <div class="validation-messages" *ngIf="passwordForm.new_password || passwordForm.confirm_password">
+            <div class="validation-message error" *ngIf="passwordForm.new_password && passwordForm.new_password.length < 6">
+              ⚠️ New password must be at least 6 characters long
+            </div>
+            <div class="validation-message error" *ngIf="passwordForm.new_password && passwordForm.current_password && passwordForm.new_password === passwordForm.current_password">
+              ⚠️ New password must be different from current password
+            </div>
+            <div class="validation-message error" *ngIf="passwordForm.confirm_password && passwordForm.new_password && passwordForm.confirm_password !== passwordForm.new_password">
+              ⚠️ Passwords do not match
+            </div>
+            <div class="validation-message success" *ngIf="passwordForm.new_password && passwordForm.confirm_password && passwordForm.confirm_password === passwordForm.new_password && passwordForm.new_password.length >= 6 && passwordForm.new_password !== passwordForm.current_password">
+              ✅ Passwords match and are valid
+            </div>
+          </div>
+
+          <!-- Password Actions -->
+          <div class="section-actions">
+            <button 
+              class="btn-primary" 
+              (click)="updatePassword()"
+              [disabled]="loading() || !isPasswordFormValid()"
+            >
+              <span *ngIf="!passwordLoading()">Change Password</span>
+              <span *ngIf="passwordLoading()">Changing...</span>
+            </button>
+            
+            <button 
+              class="btn-cancel" 
+              (click)="resetPasswordForm()"
+              [disabled]="loading()"
+            >
+              Reset Form
+            </button>
           </div>
         </div>
-
-        <!-- Work Preferences -->
-        <div class="settings-section">
-          <h2>Work Preferences</h2>
-          <div class="setting-item">
-            <label for="workStation">Preferred Work Station</label>
-            <select id="workStation" [(ngModel)]="workSettings.preferredStation">
-              <option value="any">Any Available</option>
-              <option value="counter">Counter</option>
-              <option value="kitchen">Kitchen</option>
-              <option value="floor">Floor Service</option>
-            </select>
-          </div>
-          <div class="setting-item">
-            <label for="shiftPreference">Shift Preference</label>
-            <select id="shiftPreference" [(ngModel)]="workSettings.shiftPreference">
-              <option value="morning">Morning (08:00-16:00)</option>
-              <option value="evening">Evening (16:00-00:00)</option>
-              <option value="night">Night (00:00-08:00)</option>
-              <option value="flexible">Flexible</option>
-            </select>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="workSettings.receiveShiftNotifications">
-              Receive shift change notifications
-            </label>
-          </div>
-        </div>
-
-        <!-- Display Preferences -->
-        <div class="settings-section">
-          <h2>Display Preferences</h2>
-          <div class="setting-item">
-            <label for="language">Language</label>
-            <select id="language" [(ngModel)]="displaySettings.language">
-              <option value="tr">Türkçe</option>
-              <option value="en">English</option>
-            </select>
-          </div>
-          <div class="setting-item">
-            <label for="theme">Theme</label>
-            <select id="theme" [(ngModel)]="displaySettings.theme">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto (System)</option>
-            </select>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="displaySettings.compactMode">
-              Compact interface mode
-            </label>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="displaySettings.showTooltips">
-              Show helpful tooltips
-            </label>
-          </div>
-        </div>
-
-        <!-- Notifications -->
-        <div class="settings-section">
-          <h2>Notifications</h2>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="notificationSettings.newOrders">
-              New order notifications
-            </label>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="notificationSettings.orderUpdates">
-              Order status updates
-            </label>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="notificationSettings.shiftReminders">
-              Shift reminders
-            </label>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" [(ngModel)]="notificationSettings.systemMessages">
-              System messages
-            </label>
-          </div>
-        </div>
-
-      <div class="settings-actions">
-        <button class="btn-success" (click)="saveSettings()">💾 Save Settings</button>
-        <button class="btn-secondary" (click)="resetSettings()">🔄 Reset to Defaults</button>
       </div>
     </div>
-  `,
-  styles: [`
-    .settings-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem;
-      position: relative;
-    }
-
-    .settings-sections {
-      display: grid;
-      gap: 2rem;
-      margin-bottom: 3rem;
-    }
-
-    .settings-section {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border: 1px solid #e1e5e9;
-    }
-
-    .settings-section h2 {
-      color: #333;
-      margin-bottom: 1.5rem;
-      font-size: 1.3rem;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 0.5rem;
-    }
-
-    .setting-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: #f8f9fa;
-      border-radius: 6px;
-    }
-
-    .setting-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .setting-item label {
-      font-weight: 500;
-      color: #333;
-      flex: 1;
-    }
-
-    .setting-item input[type="text"],
-    .setting-item input[type="email"],
-    .setting-item input[type="tel"],
-    .setting-item select {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      width: 200px;
-    }
-
-    .setting-item input[type="checkbox"] {
-      margin-left: 0.5rem;
-    }
-
-    .btn-primary {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .btn-success {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 1.1rem;
-    }
-
-    .btn-primary:hover { background: #0056b3; }
-    .btn-secondary:hover { background: #545b62; }
-    .btn-success:hover { background: #218838; }
-
-    .settings-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      padding-top: 2rem;
-      border-top: 1px solid #e1e5e9;
-    }
-
-    @media (max-width: 768px) {
-      .settings-container {
-        padding: 1rem;
-      }
-
-      .setting-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-      }
-
-      .setting-item input[type="text"],
-      .setting-item input[type="email"],
-      .setting-item input[type="tel"],
-      .setting-item select {
-        width: 100%;
-      }
-
-      .settings-actions {
-        flex-direction: column;
-      }
-    }
-  `]
+  `
 })
-export class StaffSettingsComponent {
-  profileSettings = {
-    displayName: '',
+export class StaffSettingsComponent implements OnInit {
+  loading = signal<boolean>(false);
+  profileLoading = signal<boolean>(false);
+  passwordLoading = signal<boolean>(false);
+
+  originalProfileForm = {
+    staff_name: '',
     email: '',
-    phone: ''
+    phone: '',
+    current_password: ''
   };
 
-  securitySettings = {
-    enableNotifications: true,
-    autoLogout: false
+  profileForm = {
+    staff_name: '',
+    email: '',
+    phone: '',
+    current_password: ''
   };
 
-  workSettings = {
-    preferredStation: 'any',
-    shiftPreference: 'flexible',
-    receiveShiftNotifications: true
+  passwordForm = {
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
   };
 
-  displaySettings = {
-    language: 'tr',
-    theme: 'light',
-    compactMode: false,
-    showTooltips: true
-  };
+  constructor(private authService: AuthService, private toastService: ToastService) {}
 
-  notificationSettings = {
-    newOrders: true,
-    orderUpdates: true,
-    shiftReminders: true,
-    systemMessages: false
-  };
+  ngOnInit() {
+    this.loadCurrentUserData();
+  }
 
-  constructor(private authService: AuthService) {
-    // Initialize with current user data
+  private loadCurrentUserData() {
     const user = this.authService.user();
     if (user) {
-      this.profileSettings.displayName = user.staff_name;
+      this.profileForm.staff_name = user.staff_name || '';
+      this.originalProfileForm.staff_name = user.staff_name || '';
+      // Email and phone are not included in JWT token, fetch from API in real implementation
+      this.profileForm.email = '';
+      this.profileForm.phone = '';
+      this.originalProfileForm.email = '';
+      this.originalProfileForm.phone = '';
     }
   }
 
-  changePassword(): void {
-    // This would open a password change modal or navigate to password change page
-    alert('Password change functionality will be implemented here');
-  }
+  updateProfile() {
+    if (this.profileLoading()) return;
 
-  saveSettings(): void {
-    // Implement save logic here
-    console.log('Saving staff settings:', {
-      profile: this.profileSettings,
-      security: this.securitySettings,
-      work: this.workSettings,
-      display: this.displaySettings,
-      notifications: this.notificationSettings
+    if (!this.profileForm.current_password || this.profileForm.current_password.length < 6) {
+      this.toastService.error('Validation Error! ❌', 'Current password is required for profile updates');
+      return;
+    }
+
+    this.profileLoading.set(true);
+    this.loading.set(true);
+
+    // Send only changed fields for profile update
+    const updates: any = {
+      current_password: this.profileForm.current_password
+    };
+
+    const user = this.authService.user();
+    if (this.profileForm.staff_name && this.profileForm.staff_name !== user?.staff_name) {
+      updates.staff_name = this.profileForm.staff_name;
+    }
+    if (this.profileForm.email && this.profileForm.email.trim()) {
+      updates.email = this.profileForm.email;
+    }
+    if (this.profileForm.phone && this.profileForm.phone.trim()) {
+      updates.phone = this.profileForm.phone;
+    }
+
+    // Check if there are any changes (excluding current_password)
+    if (Object.keys(updates).length === 1) {
+      this.toastService.info('No Changes! ℹ️', 'No changes detected to update in your profile');
+      this.profileLoading.set(false);
+      this.loading.set(false);
+      return;
+    }
+
+    this.authService.updateOwnCredentials(updates).subscribe({
+      next: () => {
+        this.profileLoading.set(false);
+        this.loading.set(false);
+        this.profileForm.current_password = '';
+        
+        this.toastService.success('Profile Updated! 🎉', 'Your profile information has been updated successfully');
+        
+        setTimeout(() => {
+          this.authService.refreshUserFromToken();
+          this.loadCurrentUserData();
+        }, 300);
+      },
+      error: (error) => {
+        console.error('Update error:', error);
+        this.profileLoading.set(false);
+        this.loading.set(false);
+        
+        this.toastService.error('Update Failed! ❌', error.error?.message || 'Failed to update profile');
+      }
     });
-    alert('Settings saved successfully!');
   }
 
-  resetSettings(): void {
-    if (confirm('Are you sure you want to reset all settings to defaults?')) {
-      const user = this.authService.user();
-      this.profileSettings = {
-        displayName: user?.staff_name || '',
-        email: '',
-        phone: ''
-      };
-      this.securitySettings = {
-        enableNotifications: true,
-        autoLogout: false
-      };
-      this.workSettings = {
-        preferredStation: 'any',
-        shiftPreference: 'flexible',
-        receiveShiftNotifications: true
-      };
-      this.displaySettings = {
-        language: 'tr',
-        theme: 'light',
-        compactMode: false,
-        showTooltips: true
-      };
-      this.notificationSettings = {
-        newOrders: true,
-        orderUpdates: true,
-        shiftReminders: true,
-        systemMessages: false
-      };
-      console.log('Settings reset to defaults');
+  updatePassword() {
+    if (this.passwordLoading() || !this.isPasswordFormValid()) return;
+
+    // Check if new password is same as current password
+    if (this.passwordForm.new_password === this.passwordForm.current_password) {
+      this.toastService.warning('Same Password! ⚠️', 'New password must be different from current password');
+      return;
     }
+
+    this.passwordLoading.set(true);
+    this.loading.set(true);
+
+    const passwordData = {
+      current_password: this.passwordForm.current_password,
+      new_password: this.passwordForm.new_password
+    };
+
+    this.authService.updateOwnCredentials(passwordData).subscribe({
+      next: () => {
+        this.resetPasswordForm();
+        this.passwordLoading.set(false);
+        this.loading.set(false);
+        
+        this.toastService.success('Password Changed! 🔐', 'Your password has been updated successfully');
+      },
+      error: (error) => {
+        this.passwordLoading.set(false);
+        this.loading.set(false);
+        
+        this.toastService.error('Password Change Failed! ❌', error.error?.message || 'Failed to change password');
+      }
+    });
+  }
+
+  isPasswordFormValid(): boolean {
+    return this.passwordForm.current_password.length >= 6 &&
+           this.passwordForm.new_password.length >= 6 &&
+           this.passwordForm.new_password === this.passwordForm.confirm_password;
+  }
+
+  resetProfileForm() {
+    this.profileForm = { ...this.originalProfileForm };
+    this.profileForm.current_password = '';
+  }
+
+  resetPasswordForm() {
+    this.passwordForm = {
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
+    };
   }
 }

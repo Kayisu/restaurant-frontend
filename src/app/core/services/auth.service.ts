@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { finalize } from 'rxjs/operators';
+import { finalize, tap } from 'rxjs/operators';
+import { ToastService } from './toast.service';
 
 interface DecodedToken {
   userId: number;
@@ -18,7 +19,7 @@ export class AuthService {
 
   private api = 'http://localhost:5001/api';
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private toastService: ToastService) {
     const decoded = this.getUserFromToken();
     if (decoded) {
       this.isAuthenticated.set(true);
@@ -57,22 +58,83 @@ export class AuthService {
     });
   }
 
-  // storeToken(token: string) {
-  //   localStorage.setItem(this.tokenKey, token);
-  //   this.isAuthenticated.set(true);
-  // }
+  // Staff updates own credentials (requires current password)
+  updateOwnCredentials(credentialsData: {
+    current_password: string;
+    new_password?: string;
+    staff_name?: string;
+    email?: string;
+    phone?: string;
+  }) {
+    return this.http.put(`${this.api}/profile`, credentialsData, {
+      withCredentials: true
+    }).pipe(
+      tap((response) => {
+        console.log('Profile update successful, refreshing user data...', response);
+        
+        const oldTokenData = this.getUserFromToken();
+        console.log('Old token user data:', oldTokenData);
+        
+        // Check for updated token after a short delay to allow cookie to be set
+        setTimeout(() => {
+          const newTokenData = this.getUserFromToken();
+          console.log('New token user data:', newTokenData);
+          
+          const tokenContentChanged = JSON.stringify(oldTokenData) !== JSON.stringify(newTokenData);
+          console.log('Token content changed:', tokenContentChanged);
+          
+          if (tokenContentChanged && newTokenData) {
+            this.toastService.success('Session Updated! ✨', `Welcome ${newTokenData.staff_name}! Your session has been refreshed.`);
+            this.user.set(newTokenData);
+          } else if (newTokenData) {
+            this.user.set(newTokenData);
+            console.log('Token content same, but user data refreshed');
+          } else {
+            console.warn('Could not decode token after update');
+          }
+        }, 300);
+      })
+    );
+  }
 
-  // getToken() {
-  //   return localStorage.getItem(this.tokenKey);
-  // }
+  // Admin updates any user's credentials (no current password needed)
+  adminUpdateCredentials(userId: number | string, updates: {
+    staff_name?: string;
+    password?: string;
+    role_id?: number;
+    email?: string;
+    phone?: string;
+  }) {
+    return this.http.put(`${this.api}/users/${userId}`, updates, {
+      withCredentials: true
+    });
+  }
 
   logout() {
+    this.isAuthenticated.set(false);
+    this.user.set(null);
+    this.clearAuthData();
+    
     this.http.post(`${this.api}/auth/logout`, {}, {
       withCredentials: true
-    }).subscribe(() => {
-      this.isAuthenticated.set(false);
-      this.user.set(null);
+    }).subscribe({
+      next: () => {
+        console.log('Server logout successful');
+      },
+      error: (error) => {
+        console.warn('Server logout failed, but local state cleared:', error);
+      }
     });
+  }
+
+  private clearAuthData() {
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refreshToken');
   }
 
 
@@ -85,6 +147,17 @@ export class AuthService {
       return JSON.parse(payload);
     } catch {
       return null;
+    }
+  }
+
+  // Force refresh user data from token
+  refreshUserFromToken(): void {
+    const decoded = this.getUserFromToken();
+    if (decoded) {
+      this.user.set(decoded);
+      console.log('User data force refreshed:', decoded);
+    } else {
+      console.warn('No valid token found for refresh');
     }
   }
 
