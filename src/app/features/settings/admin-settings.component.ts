@@ -6,9 +6,8 @@ import { ToastService } from '../../core/services/toast.service';
 
 interface User {
   id?: number;
-  staff_id?: number;
   user_id?: number;
-  staff_name: string;
+  user_name: string;
   role_id: number;
   email?: string;
   phone?: string;
@@ -77,7 +76,7 @@ interface User {
                   <ng-container *ngFor="let user of adminUsers">
                     <tr class="user-row admin-row">
                       <td>{{ getUserId(user) }}</td>
-                      <td class="user-name">{{ user.staff_name }}</td>
+                      <td class="user-name">{{ user.user_name }}</td>
                       <td>
                         <span class="role-badge" [class]="getRoleClass(user.role_id)">
                           {{ getRoleName(user.role_id) }}
@@ -107,15 +106,15 @@ interface User {
                     <tr *ngIf="editingUserId === getUserId(user)" class="edit-form-row">
                       <td colspan="7">
                         <div class="inline-edit-form">
-                          <h4>Edit Admin: {{ user.staff_name }}</h4>
+                          <h4>Edit Admin: {{ user.user_name }}</h4>
                           
                           <div class="edit-form-grid">
                             <div class="form-group">
                               <label for="edit_staff_name">Username</label>
                               <input 
-                                id="edit_staff_name"
+                                id="edit_user_name"
                                 type="text" 
-                                [(ngModel)]="editForm.staff_name"
+                                [(ngModel)]="editForm.user_name"
                                 placeholder="Enter username"
                               />
                             </div>
@@ -200,7 +199,7 @@ interface User {
                   <ng-container *ngFor="let user of staffUsers">
                     <tr class="user-row staff-row">
                       <td>{{ getUserId(user) }}</td>
-                      <td class="user-name">{{ user.staff_name }}</td>
+                      <td class="user-name">{{ user.user_name }}</td>
                       <td>
                         <span class="role-badge" [class]="getRoleClass(user.role_id)">
                           {{ getRoleName(user.role_id) }}
@@ -230,15 +229,15 @@ interface User {
                     <tr *ngIf="editingUserId === getUserId(user)" class="edit-form-row">
                       <td colspan="7">
                         <div class="inline-edit-form">
-                          <h4>Edit Staff: {{ user.staff_name }}</h4>
-                          
+                          <h4>Edit User: {{ user.user_name }}</h4>
+
                           <div class="edit-form-grid">
                             <div class="form-group">
-                              <label for="edit_staff_name">Username</label>
+                              <label for="edit_user_name">Username</label>
                               <input 
-                                id="edit_staff_name"
+                                id="edit_user_name"
                                 type="text" 
-                                [(ngModel)]="editForm.staff_name"
+                                [(ngModel)]="editForm.user_name"
                                 placeholder="Enter username"
                               />
                             </div>
@@ -320,8 +319,8 @@ interface User {
                 <input 
                   id="staffName"
                   type="text" 
-                  [(ngModel)]="newUser.staff_name"
-                  name="staff_name"
+                  [(ngModel)]="newUser.user_name"
+                  name="user_name"
                   placeholder="Enter full name"
                   required
                   #staffName="ngModel"
@@ -428,18 +427,17 @@ export class AdminSettingsComponent implements OnInit {
   users: User[] = [];
   currentUserId: number | null = null;
   
-  // Edit form states
   editingUserId: number | string | null = null;
   editForm = {
-    staff_name: '',
+    user_name: '',
     email: '',
     phone: '',
     password: '',
-    role_id: 2  // Default to Staff (2), not Admin (1)
+    role_id: 2
   };
   
   newUser = {
-    staff_name: '',
+    user_name: '',
     password: '',
     role_id: '',
     email: '',
@@ -463,7 +461,7 @@ export class AdminSettingsComponent implements OnInit {
   }
 
   getUserId(user: User): number | string {
-    return user.id || user.staff_id || user.user_id || '-';
+    return user.id || user.user_id || '-';
   }
 
   isEditingSelfRole(user: User): boolean {
@@ -479,13 +477,11 @@ export class AdminSettingsComponent implements OnInit {
   }
 
   constructor(private authService: AuthService, private cdr: ChangeDetectorRef, private toastService: ToastService) {
-    // Get current user ID to prevent self-deletion
     const user = this.authService.user();
     this.currentUserId = user?.userId || null;
   }
 
   ngOnInit(): void {
-    // Load users after component initialization to avoid ExpressionChangedAfterItHasBeenCheckedError
     setTimeout(() => {
       this.refreshUserList();
     }, 0);
@@ -584,7 +580,7 @@ export class AdminSettingsComponent implements OnInit {
       // Start editing this user
       this.editingUserId = this.getUserId(user);
       this.editForm = {
-        staff_name: user.staff_name,
+        user_name: user.user_name,
         email: user.email || '',
         phone: user.phone || '',
         password: '',
@@ -596,7 +592,7 @@ export class AdminSettingsComponent implements OnInit {
   cancelEdit(): void {
     this.editingUserId = null;
     this.editForm = {
-      staff_name: '',
+      user_name: '',
       email: '',
       phone: '',
       password: '',
@@ -613,9 +609,9 @@ export class AdminSettingsComponent implements OnInit {
 
     // Prepare updates object with only changed fields
     const updates: any = {};
-    
-    if (this.editForm.staff_name !== user.staff_name && this.editForm.staff_name.trim()) {
-      updates.staff_name = this.editForm.staff_name.trim();
+
+    if (this.editForm.user_name !== user.user_name && this.editForm.user_name.trim()) {
+      updates.user_name = this.editForm.user_name.trim();
     }
     
     if (this.editForm.email !== (user.email || '') && this.editForm.email.trim()) {
@@ -679,8 +675,8 @@ export class AdminSettingsComponent implements OnInit {
       } else {
         // Admin editing other users OR admin editing own profile without password
         await this.authService.adminUpdateCredentials(userId, updates).toPromise();
-        this.toastService.success('User Updated! 📝', `User "${user.staff_name}" updated successfully!`);
-        
+        this.toastService.success('User Updated! 📝', `User "${user.user_name}" updated successfully!`);
+
         // If admin edited themselves (without password), refresh session
         if (isEditingSelf) {
           setTimeout(() => {
@@ -702,7 +698,7 @@ export class AdminSettingsComponent implements OnInit {
         if (error?.error?.message?.includes('already exists') || 
             error?.error?.message?.includes('duplicate') ||
             error?.error?.message?.includes('unique')) {
-          errorMessage = `Username "${this.editForm.staff_name}" already exists. Please choose a different username.`;
+          errorMessage = `Username "${this.editForm.user_name}" already exists. Please choose a different username.`;
         } else if (error?.error?.message) {
           errorMessage = error.error.message;
         } else {
@@ -714,7 +710,7 @@ export class AdminSettingsComponent implements OnInit {
         errorMessage = 'You don\'t have permission to update this user.';
       } else if (error?.status === 409) {
         // Conflict - duplicate entry
-        errorMessage = `Username "${this.editForm.staff_name}" already exists. Please choose a different username.`;
+        errorMessage = `Username "${this.editForm.user_name}" already exists. Please choose a different username.`;
       } else if (error?.error?.message) {
         errorMessage = error.error.message;
       } else if (error?.message) {
@@ -739,8 +735,8 @@ export class AdminSettingsComponent implements OnInit {
 
     try {
       await this.authService.adminUpdateCredentials(userId, updates).toPromise();
-      this.toastService.success('User Updated! 📝', `User "${user.staff_name}" updated successfully!`);
-      
+      this.toastService.success('User Updated! 📝', `User "${user.user_name}" updated successfully!`);
+
       // Refresh user list to show changes
       this.refreshUserList();
     } catch (error: any) {
@@ -763,7 +759,7 @@ export class AdminSettingsComponent implements OnInit {
       return;
     }
 
-    const confirmed = confirm(`Are you sure you want to delete user "${user.staff_name}"? This action cannot be undone.`);
+    const confirmed = confirm(`Are you sure you want to delete user "${user.user_name}"? This action cannot be undone.`);
     if (!confirmed) return;
 
     try {
@@ -772,8 +768,8 @@ export class AdminSettingsComponent implements OnInit {
       
       // Remove from local array after successful API call
       this.users = this.users.filter(u => this.getUserId(u) !== userId);
-      this.toastService.success('User Deleted! 🗑️', `User "${user.staff_name}" has been successfully deleted.`);
-      
+      this.toastService.success('User Deleted! 🗑️', `User "${user.user_name}" has been successfully deleted.`);
+
     } catch (error: any) {
       console.error('Failed to delete user:', error);
       
@@ -801,7 +797,7 @@ export class AdminSettingsComponent implements OnInit {
 
   resetForm(): void {
     this.newUser = {
-      staff_name: '',
+      user_name: '',
       password: '',
       role_id: '',
       email: '',
@@ -816,7 +812,7 @@ export class AdminSettingsComponent implements OnInit {
     try {
       // Prepare user data for API
       const userData = {
-        staff_name: this.newUser.staff_name,
+        user_name: this.newUser.user_name,
         password: this.newUser.password,
         role_id: parseInt(this.newUser.role_id), // Convert to number
         email: this.newUser.email || undefined,
@@ -827,8 +823,8 @@ export class AdminSettingsComponent implements OnInit {
       
       // Call the real API
       const response = await this.authService.register(userData).toPromise();
-      
-      this.toastService.success('User Created! 👤', `User "${this.newUser.staff_name}" has been successfully created!`);
+
+      this.toastService.success('User Created! 👤', `User "${this.newUser.user_name}" has been successfully created!`);
       this.resetForm();
       this.showAddUserForm = false;
       
@@ -851,7 +847,7 @@ export class AdminSettingsComponent implements OnInit {
         if (error?.error?.message?.includes('already exists') || 
             error?.error?.message?.includes('duplicate') ||
             error?.error?.message?.includes('unique')) {
-          errorMessage = `Username "${this.newUser.staff_name}" already exists. Please choose a different username.`;
+          errorMessage = `Username "${this.newUser.user_name}" already exists. Please choose a different username.`;
         } else if (error?.error?.message) {
           errorMessage = error.error.message;
         } else {
@@ -863,7 +859,7 @@ export class AdminSettingsComponent implements OnInit {
         errorMessage = 'Admin access required. You don\'t have permission to create users.';
       } else if (error?.status === 409) {
         // Conflict - duplicate entry
-        errorMessage = `Username "${this.newUser.staff_name}" already exists. Please choose a different username.`;
+        errorMessage = `Username "${this.newUser.user_name}" already exists. Please choose a different username.`;
       } else if (error?.error?.message) {
         errorMessage = `${error.error.message}`;
       } else if (error?.message) {

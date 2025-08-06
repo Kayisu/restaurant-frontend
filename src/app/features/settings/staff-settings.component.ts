@@ -17,11 +17,11 @@ import { ToastService } from '../../core/services/toast.service';
           <h2>Profile Information</h2>
           
           <div class="setting-item">
-            <label for="staff_name">Username</label>
+            <label for="user_name">Username</label>
             <input 
-              id="staff_name" 
+              id="user_name" 
               type="text" 
-              [(ngModel)]="profileForm.staff_name"
+              [(ngModel)]="profileForm.user_name"
               placeholder="Enter username"
             />
           </div>
@@ -158,14 +158,14 @@ export class StaffSettingsComponent implements OnInit {
   passwordLoading = signal<boolean>(false);
 
   originalProfileForm = {
-    staff_name: '',
+    user_name: '',
     email: '',
     phone: '',
     current_password: ''
   };
 
   profileForm = {
-    staff_name: '',
+    user_name: '',
     email: '',
     phone: '',
     current_password: ''
@@ -186,9 +186,8 @@ export class StaffSettingsComponent implements OnInit {
   private loadCurrentUserData() {
     const user = this.authService.user();
     if (user) {
-      this.profileForm.staff_name = user.staff_name || '';
-      this.originalProfileForm.staff_name = user.staff_name || '';
-      // Email and phone are not included in JWT token, fetch from API in real implementation
+      this.profileForm.user_name = user.user_name || '';
+      this.originalProfileForm.user_name = user.user_name || '';
       this.profileForm.email = '';
       this.profileForm.phone = '';
       this.originalProfileForm.email = '';
@@ -213,8 +212,8 @@ export class StaffSettingsComponent implements OnInit {
     };
 
     const user = this.authService.user();
-    if (this.profileForm.staff_name && this.profileForm.staff_name !== user?.staff_name) {
-      updates.staff_name = this.profileForm.staff_name;
+    if (this.profileForm.user_name && this.profileForm.user_name !== user?.user_name) {
+      updates.user_name = this.profileForm.user_name;
     }
     if (this.profileForm.email && this.profileForm.email.trim()) {
       updates.email = this.profileForm.email;

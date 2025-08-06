@@ -34,7 +34,7 @@ export class SettingsComponent {
 
   isAdmin(): boolean {
     const user = this.authService.user();
-    return user?.role_id === 1; // Assuming 1 is admin role
+    return user?.role_id === 1;
   }
 
   goBack(): void {

@@ -21,7 +21,7 @@ import { ToastContainerComponent } from '../shared/toast-container.component';
           </div>
           <div class="greeting">
             <span>Welcome</span>
-            <span>{{ authService.user()?.staff_name || 'User' }}</span>
+            <span>{{ authService.user()?.user_name || 'User' }}</span>
           </div>
         </div>
 
@@ -53,7 +53,7 @@ export class LayoutComponent {
 
   getUserInitial(): string {
     const user = this.authService.user();
-    return user?.staff_name ? user.staff_name.charAt(0).toUpperCase() : 'U';
+    return user?.user_name ? user.user_name.charAt(0).toUpperCase() : 'U';
   }
 
   toggleMenu() {
@@ -63,12 +63,11 @@ export class LayoutComponent {
   logout(event: Event) {
     event.stopPropagation();
     this.authService.logout();
-    // Force immediate navigation to login
     setTimeout(() => {
       this.router.navigate(['/login'], { 
         replaceUrl: true
       });
-    }, 100); // Small delay to ensure logout completes
+    }, 100);
   }
 
   goToSettings(event: Event) {

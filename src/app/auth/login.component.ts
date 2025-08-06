@@ -19,11 +19,11 @@ import { AuthService } from '../core/services/auth.service';
         
         <form (ngSubmit)="onLogin()" class="login-form">
           <div class="form-group">
-            <label for="staff_name">Username</label>
+            <label for="user_name">Username</label>
             <input 
-              id="staff_name"
-              [(ngModel)]="credentials.staff_name" 
-              name="staff_name" 
+              id="user_name"
+              [(ngModel)]="credentials.user_name" 
+              name="user_name" 
               type="text"
               placeholder="Enter your username" 
               required 
@@ -63,7 +63,7 @@ import { AuthService } from '../core/services/auth.service';
 })
 export class LoginComponent {
   credentials = {
-    staff_name: '',
+    user_name: '',
     password: ''
   };
 
@@ -88,7 +88,7 @@ export class LoginComponent {
   }
 
   isFormValid(): boolean {
-    return this.credentials.staff_name.trim() !== '' && 
+    return this.credentials.user_name.trim() !== '' && 
            this.credentials.password.trim() !== '';
   }
 
@@ -99,7 +99,7 @@ export class LoginComponent {
 
     this.errorMessage.set('');
 
-    this.authService.login(this.credentials.staff_name, this.credentials.password).subscribe({
+    this.authService.login(this.credentials.user_name, this.credentials.password).subscribe({
       next: () => {
         const user = this.authService.getUserFromToken();
         if (user) {

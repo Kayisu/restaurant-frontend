@@ -28,6 +28,10 @@ export const routes: Routes = [
         canActivate: [adminGuard]
       },
       {
+        path: 'table/:tableId',
+        loadComponent: () => import('./features/table/table-detail.component').then(m => m.TableDetailComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

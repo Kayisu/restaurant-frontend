@@ -5,7 +5,7 @@ import { ToastService } from './toast.service';
 
 interface DecodedToken {
   userId: number;
-  staff_name: string;
+  user_name: string;
   role_id: number;
   exp: number;
   iat: number;
@@ -28,9 +28,9 @@ export class AuthService {
   }
 
 
-  login(staff_name: string, password: string) {
+  login(user_name: string, password: string) {
     this.loading.set(true);
-    const loginRequest = this.http.post(`${this.api}/auth/login`, { staff_name, password }, {
+    const loginRequest = this.http.post(`${this.api}/auth/login`, { user_name, password }, {
       withCredentials: true
     });
     
@@ -40,7 +40,7 @@ export class AuthService {
     );
   }
 
-  register(userData: { staff_name: string; password: string; role_id: number; email?: string; phone?: string }) {
+  register(userData: { user_name: string; password: string; role_id: number; email?: string; phone?: string }) {
     return this.http.post(`${this.api}/auth/register`, userData, {
       withCredentials: true
     });
@@ -62,7 +62,7 @@ export class AuthService {
   updateOwnCredentials(credentialsData: {
     current_password: string;
     new_password?: string;
-    staff_name?: string;
+    user_name?: string;
     email?: string;
     phone?: string;
   }) {
@@ -84,7 +84,7 @@ export class AuthService {
           console.log('Token content changed:', tokenContentChanged);
           
           if (tokenContentChanged && newTokenData) {
-            this.toastService.success('Session Updated! ✨', `Welcome ${newTokenData.staff_name}! Your session has been refreshed.`);
+            this.toastService.success('Session Updated! ✨', `Welcome ${newTokenData.user_name}! Your session has been refreshed.`);
             this.user.set(newTokenData);
           } else if (newTokenData) {
             this.user.set(newTokenData);
@@ -99,7 +99,7 @@ export class AuthService {
 
   // Admin updates any user's credentials (no current password needed)
   adminUpdateCredentials(userId: number | string, updates: {
-    staff_name?: string;
+    user_name?: string;
     password?: string;
     role_id?: number;
     email?: string;

@@ -8,6 +8,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const authService = inject(AuthService);
   
+  
   return next(req).pipe(
     catchError((error) => {
       // Handle 401 Unauthorized responses
