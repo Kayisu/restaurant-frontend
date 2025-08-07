@@ -1,0 +1,155 @@
+.table-orders-container {
+  padding: 20px;
+}
+
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e5e7eb;
+
+  h2 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+  }
+
+  .orders-summary {
+    .order-count {
+      background: #f3f4f6;
+      color: #6b7280;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.orders-content {
+  min-height: 400px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+  }
+
+  h3 {
+    color: #374151;
+    margin: 0 0 10px 0;
+    font-size: 1.3rem;
+  }
+
+  p {
+    color: #6b7280;
+    margin: 0 0 30px 0;
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &.btn-primary {
+      background: #3b82f6;
+      color: white;
+
+      &:disabled {
+        background: #d1d5db;
+        color: #9ca3af;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+/* Future styles for when orders are implemented */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.order-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    
+    .order-id {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    
+    .order-time {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+  }
+
+  .order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .item-name {
+        flex: 1;
+        color: #374151;
+      }
+
+      .item-qty {
+        color: #6b7280;
+        margin: 0 15px;
+      }
+
+      .item-price {
+        color: #1f2937;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .order-total {
+    text-align: right;
+    font-weight: 700;
+    color: #059669;
+    font-size: 1.1rem;
+    padding-top: 10px;
+    border-top: 2px solid #e5e7eb;
+  }
+}

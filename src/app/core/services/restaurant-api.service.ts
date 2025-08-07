@@ -102,6 +102,10 @@ export class RestaurantApiService {
     return this.get(`/tables/${tableId}`);
   }
 
+  getTableDetails(tableId: string): Observable<any> {
+    return this.get(`/tables/${tableId}/details`);
+  }
+
   updateTableStatus(tableId: string, status: { is_occupied: boolean; assigned_server?: string }): Observable<any> {
     return this.put(`/tables/${tableId}/status`, status);
   }

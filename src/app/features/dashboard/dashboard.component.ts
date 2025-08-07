@@ -29,7 +29,9 @@ interface DashboardStats {
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [CommonModule],
+  imports: [
+    CommonModule
+  ],
   styleUrl: './dashboard.component.scss',
   template: `
     <div class="dashboard">
@@ -75,7 +77,7 @@ interface DashboardStats {
       <div class="dashboard-actions">
         <button class="action-btn secondary" (click)="navigateTo('/menu')">
           <span class="btn-icon">🍽️</span>
-          Manage Menus
+          Manage Menu
         </button>
         
         <button class="action-btn" (click)="navigateTo('/settings')" *ngIf="isAdmin">
@@ -122,15 +124,15 @@ interface DashboardStats {
             </div>
             <div class="table-details">
               <p>👥 Capacity: {{ table.capacity }}</p>
-              <p *ngIf="table.server_name">� Server: {{ table.server_name }}</p>
+              <p *ngIf="table.server_name">🍽️ Server: {{ table.server_name }}</p>
               <p *ngIf="table.occupied_duration_minutes">
-                🕐 {{ table.occupied_duration_minutes }} mins
+                🕐 {{ Math.floor(table.occupied_duration_minutes) }} mins
               </p>
               <p *ngIf="table.customer_name">
                 🙋 {{ table.customer_name }}
               </p>
               <p *ngIf="table.total_amount">
-                � ₺{{ table.total_amount }}
+                💰 ₺{{ Math.floor(table.total_amount) }}
               </p>
             </div>
           </div>
@@ -157,6 +159,9 @@ export class DashboardComponent implements OnInit {
   tableSectionKeys: string[] = [];
   currentSectionIndex = 0;
   currentSection = '';
+
+  // Math nesnesini template'te kullanabilmek için
+  Math = Math;
 
   constructor(
     private router: Router,
@@ -190,18 +195,14 @@ export class DashboardComponent implements OnInit {
         this.groupTablesBySection();
         this.cdr.detectChanges();
       } else {
-        await this.loadSampleTablesWithDelay();
+        this.tables = [];
       }
     } catch (error) {
-      await this.loadSampleTablesWithDelay();
+      
     }
   }
 
-  async loadSampleTablesWithDelay() {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    this.loadSampleTables();
-    this.cdr.detectChanges();
-  }
+
 
   async loadDashboardStats() {
     try {
@@ -212,19 +213,6 @@ export class DashboardComponent implements OnInit {
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
     }
-  }
-
-  loadSampleTables() {
-    this.tables = [
-      { table_id: 'A-01', capacity: 4, is_occupied: false, table_status: 'available' },
-      { table_id: 'A-02', capacity: 4, is_occupied: true, table_status: 'occupied', server_name: 'John', customer_name: 'Smith Family', occupied_duration_minutes: 45, total_amount: 150 },
-      { table_id: 'A-03', capacity: 2, is_occupied: false, table_status: 'available' },
-      { table_id: 'B-01', capacity: 6, is_occupied: true, table_status: 'occupied', server_name: 'Alice', customer_name: 'Johnson Group', occupied_duration_minutes: 30, total_amount: 250 },
-      { table_id: 'B-02', capacity: 4, is_occupied: false, table_status: 'available' },
-      { table_id: 'C-01', capacity: 8, is_occupied: false, table_status: 'available' },
-      { table_id: 'VIP-01', capacity: 10, is_occupied: true, table_status: 'occupied', server_name: 'Michael', customer_name: 'Corporate Event', occupied_duration_minutes: 120, total_amount: 800 },
-    ];
-    this.groupTablesBySection();
   }
 
   groupTablesBySection() {
@@ -291,6 +279,9 @@ export class DashboardComponent implements OnInit {
   }
 
   selectTable(table: TableData): void {
-    this.router.navigate(['/table', table.table_id]);
+    // Router state ile table verisini aktar
+    this.router.navigate(['/table', table.table_id], {
+      state: { tableData: table }
+    });
   }
 }

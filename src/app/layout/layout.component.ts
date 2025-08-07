@@ -2,7 +2,7 @@ import { Component, ElementRef, HostListener, ViewChild, signal} from '@angular/
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
-import { ToastContainerComponent } from '../shared/toast-container.component';
+import { ToastContainerComponent } from './toast-container/toast-container.component';
 
 
 
