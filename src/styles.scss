@@ -1,4 +1,6 @@
 /* Global styles for Restaurant Management System */
+@use 'styles/variables' as *;
+@use 'styles/mixins' as *;
 
 * {
   margin: 0;
@@ -8,8 +10,8 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #f8f9fa;
-  color: #333;
+  background-color: $light-color;
+  color: $dark-color;
   line-height: 1.6;
 }
 
@@ -31,7 +33,7 @@ input, select, textarea {
 
 /* Focus styles */
 *:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid $primary-color;
   outline-offset: 2px;
 }
 
@@ -39,7 +41,7 @@ input, select, textarea {
 .text-center { text-align: center; }
 .flex { display: flex; }
 .flex-column { flex-direction: column; }
-.gap-1 { gap: 0.25rem; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
+.gap-1 { gap: $spacing-xs; }
+.gap-2 { gap: $spacing-sm; }
+.gap-3 { gap: $spacing-md; }
+.gap-4 { gap: $spacing-lg; }

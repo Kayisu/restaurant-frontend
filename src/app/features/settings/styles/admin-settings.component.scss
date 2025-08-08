@@ -1,29 +1,32 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
 .settings-container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: $spacing-xl;
   position: relative;
 }
 
 .settings-sections {
   display: grid;
-  gap: 2rem;
-  margin-bottom: 3rem;
+  gap: $spacing-xl;
+  margin-bottom: $spacing-xxl;
 }
 
 .settings-section {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: $border-radius-xl;
+  padding: $spacing-lg;
+  box-shadow: $shadow-md;
   border: 1px solid #e1e5e9;
 
   h2 {
-    color: #333;
-    margin-bottom: 1.5rem;
+    color: $dark-color;
+    margin-bottom: $spacing-lg;
     font-size: 1.3rem;
     border-bottom: 2px solid #f0f0f0;
-    padding-bottom: 0.5rem;
+    padding-bottom: $spacing-sm;
   }
 }
 
@@ -31,10 +34,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: #f8f9fa;
-  border-radius: 6px;
+  margin-bottom: $spacing-md;
+  padding: $spacing-md;
+  background: $light-color;
+  border-radius: $border-radius-md;
 
   &:last-child {
     margin-bottom: 0;
@@ -42,49 +45,39 @@
 
   label {
     font-weight: 500;
-    color: #333;
+    color: $dark-color;
     flex: 1;
   }
 
   input[type="text"],
   input[type="number"],
   select {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    @include form-input;
     width: 200px;
   }
 
   input[type="checkbox"] {
-    margin-left: 0.5rem;
+    margin-left: $spacing-sm;
   }
 }
 
 // Button Styles
 .btn-primary {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover {
-    background: #0056b3;
-  }
+  @include button-base;
+  @include button-variant($primary-color, $primary-hover);
+  @include button-size($spacing-sm, $spacing-md);
   
   .user-count {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
-    padding: 0.15rem 0.5rem;
-    border-radius: 12px;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-xl;
     font-size: 0.75rem;
     font-weight: 600;
-    margin-left: 0.75rem;
+    margin-left: $spacing-md;
     border: 1px solid rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(4px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    box-shadow: $shadow-sm;
+    transition: all $transition-fast;
   }
   
   &:hover .user-count {
@@ -94,146 +87,82 @@
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover {
-    background: #545b62;
-  }
+  @include button-base;
+  @include button-variant($secondary-color, $secondary-hover);
+  @include button-size($spacing-sm, $spacing-md);
 }
 
 .btn-cancel {
-  background: rgba(167, 40, 40, 1);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 1.1rem;
-
-  &:hover {
-    background: #c82333;
-  }
+  @include button-base;
+  @include button-variant(rgba(167, 40, 40, 1), #c82333);
+  @include button-size($spacing-md, $spacing-lg, 1.1rem);
 }
 
 .btn-success {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 1.1rem;
-
-  &:hover {
-    background: #218838;
-  }
+  @include button-base;
+  @include button-variant($success-color, $success-hover);
+  @include button-size($spacing-md, $spacing-lg, 1.1rem);
 }
 
 .btn-warning {
-  background: #ffc107;
-  color: #212529;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover {
-    background: #e0a800;
-  }
+  @include button-base;
+  @include button-variant($warning-color, $warning-hover, $dark-color);
+  @include button-size($spacing-sm, $spacing-md);
 }
 
 .btn-danger {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover:not(:disabled) {
-    background: #c82333;
-  }
-  
-  &:disabled {
-    background: #6c757d;
-    color: #adb5bd;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
+  @include button-base;
+  @include button-variant($danger-color, $danger-hover);
+  @include button-size($spacing-sm, $spacing-md);
 }
 
 .btn-small {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
-  border-radius: 4px;
+  @include button-size($spacing-xs, $spacing-sm, 0.8rem);
+  border-radius: $border-radius-sm;
 }
 
 // Form Styles
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 
   label {
     font-weight: 600;
-    color: #333;
+    color: $dark-color;
     font-size: 0.9rem;
   }
 
   input,
   select {
-    padding: 0.75rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
-
-    &:focus {
-      outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-    }
-
-    &.ng-invalid.ng-touched {
-      border-color: #dc3545;
-    }
+    @include form-input;
   }
 }
 
 .error-message {
-  color: #dc3545;
+  color: $danger-color;
   font-size: 0.8rem;
   font-weight: 500;
 }
 
 .form-actions {
   display: flex;
-  gap: 1rem;
+  gap: $spacing-md;
   justify-content: center;
-  padding-top: 1rem;
+  padding-top: $spacing-md;
   border-top: 1px solid #e1e5e9;
 }
 
 // User List Styles
 .user-list-actions {
-  margin-top: 1rem;
+  margin-top: $spacing-md;
   display: flex;
   justify-content: flex-end;
 }
@@ -241,8 +170,8 @@
 .loading-message,
 .no-users-message {
   text-align: center;
-  padding: 2rem;
-  color: #666;
+  padding: $spacing-xl;
+  color: $text-muted;
   font-style: italic;
 }
 
@@ -253,91 +182,234 @@
 .user-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: $spacing-md;
   background: white;
-  border-radius: 8px;
+  border-radius: $border-radius-lg;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: $shadow-sm;
 
   th,
   td {
-    padding: 0.75rem;
+    padding: $spacing-md;
     text-align: left;
     border-bottom: 1px solid #e1e5e9;
   }
 
   th {
-    background: #f8f9fa;
+    background: $light-color;
     font-weight: 600;
-    color: #333;
+    color: $dark-color;
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   tbody tr:hover {
-    background: #f8f9fa;
+    background: $light-color;
   }
 }
 
 .user-name {
   font-weight: 600;
-  color: #333;
+  color: $dark-color;
 }
 
 .role-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-xl;
   font-size: 0.8rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
   &.role-admin {
-    background: #dc3545;
+    background: $danger-color;
     color: white;
   }
 
   &.role-staff {
-    background: #007bff;
+    background: $primary-color;
     color: white;
   }
 
   &.role-unknown {
-    background: #6c757d;
+    background: $secondary-color;
     color: white;
   }
 }
 
 .action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .settings-actions {
   display: flex;
-  gap: 1rem;
+  gap: $spacing-md;
   justify-content: center;
-  padding-top: 2rem;
+  padding-top: $spacing-xl;
   border-top: 1px solid #e1e5e9;
 }
 
+// Inline Edit Form Styles
+.edit-form-row {
+  td {
+    padding: 0 !important;
+    background: #f8f9fc;
+    border-top: 2px solid $primary-color;
+  }
+}
+
+.inline-edit-form {
+  padding: $spacing-lg;
+  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+  border-radius: $border-radius-lg;
+  margin: $spacing-sm;
+  border: 1px solid $border-color;
+
+  h4 {
+    color: $text-muted;
+    margin-bottom: $spacing-md;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    
+    &::before {
+      content: "✏️";
+      font-size: 1.2rem;
+    }
+  }
+}
+
+.edit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: $spacing-md;
+  justify-content: flex-end;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+  
+  .btn-success {
+    background: linear-gradient(135deg, $success-color 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    }
+  }
+  
+  .btn-cancel {
+    background: linear-gradient(135deg, $secondary-color 0%, $text-muted 100%);
+    color: white;
+    border: none;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+    }
+  }
+}
+
+// Role security warning
+.role-warning {
+  display: block;
+  color: $danger-color;
+  font-size: 0.8rem;
+  margin-top: $spacing-xs;
+  font-style: italic;
+}
+
+// User sections styling
+.user-section {
+  margin-bottom: $spacing-xl;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-header {
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  
+  &:has-text("👑") {
+    color: $danger-color; // Red for admins
+  }
+  
+  &:has-text("👥") {
+    color: $success-color; // Green for staff
+  }
+}
+
+.section-divider {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, #e0e0e0 0%, transparent 100%);
+  border-radius: 1px;
+}
+
+// Row styling based on role
+.admin-row {
+  background-color: rgba(220, 53, 69, 0.05);
+  border-left: 3px solid $danger-color;
+  
+  &:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+}
+
+.staff-row {
+  background-color: rgba(40, 167, 69, 0.05);
+  border-left: 3px solid $success-color;
+  
+  &:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+}
+
 // Responsive Design
-@media (max-width: 768px) {
+@include tablet {
   .settings-container {
-    padding: 1rem;
-    padding-right: 1rem; /* Remove extra padding on mobile */
+    padding: $spacing-md;
   }
 
   .setting-item {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
+    gap: $spacing-sm;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: $spacing-md;
   }
 
   .form-actions {
@@ -354,166 +426,19 @@
 
   .user-table th,
   .user-table td {
-    padding: 0.5rem 0.25rem;
+    padding: $spacing-sm $spacing-xs;
   }
 
   .action-buttons {
     flex-direction: column;
-    gap: 0.25rem;
+    gap: $spacing-xs;
   }
 
   .btn-small {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
-}
 
-// Inline Edit Form Styles
-.edit-form-row {
-  td {
-    padding: 0 !important;
-    background: #f8f9fc;
-    border-top: 2px solid #007bff;
-  }
-}
-
-.inline-edit-form {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-  border-radius: 8px;
-  margin: 0.5rem;
-  border: 1px solid #dee2e6;
-
-  h4 {
-    color: #495057;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    
-    &::before {
-      content: "✏️";
-      font-size: 1.2rem;
-    }
-  }
-}
-
-.edit-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.edit-form-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding-top: 1rem;
-  border-top: 1px solid #dee2e6;
-  
-  .btn-success {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-    }
-  }
-  
-  .btn-cancel {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
-    }
-  }
-}
-
-// Role security warning
-.role-warning {
-  display: block;
-  color: #dc3545;
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
-  font-style: italic;
-}
-
-// User sections styling
-.user-section {
-  margin-bottom: 2rem;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.section-header {
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0;
-  white-space: nowrap;
-  
-  &:has-text("👑") {
-    color: #dc3545; // Red for admins
-  }
-  
-  &:has-text("👥") {
-    color: #28a745; // Green for staff
-  }
-}
-
-.section-divider {
-  flex: 1;
-  height: 2px;
-  background: linear-gradient(90deg, #e0e0e0 0%, transparent 100%);
-  border-radius: 1px;
-}
-
-// Row styling based on role
-.admin-row {
-  background-color: rgba(220, 53, 69, 0.05);
-  border-left: 3px solid #dc3545;
-  
-  &:hover {
-    background-color: rgba(220, 53, 69, 0.1);
-  }
-}
-
-.staff-row {
-  background-color: rgba(40, 167, 69, 0.05);
-  border-left: 3px solid #28a745;
-  
-  &:hover {
-    background-color: rgba(40, 167, 69, 0.1);
-  }
-}
-
-// Edit form responsive
-@media (max-width: 768px) {
   .edit-form-grid {
     grid-template-columns: 1fr;
   }

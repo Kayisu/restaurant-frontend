@@ -1,0 +1,96 @@
+@use 'variables' as *;
+
+// Button Mixins
+@mixin button-base {
+  border: none;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all $transition-normal;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+@mixin button-variant($bg-color, $hover-color, $text-color: white) {
+  background: $bg-color;
+  color: $text-color;
+  
+  &:hover:not(:disabled) {
+    background: $hover-color;
+  }
+}
+
+@mixin button-size($padding-y, $padding-x, $font-size: 1rem) {
+  padding: $padding-y $padding-x;
+  font-size: $font-size;
+}
+
+// Card Mixins
+@mixin card-base {
+  background: white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+  border: 1px solid $border-color;
+  transition: all $transition-normal;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+  }
+}
+
+// Form Mixins
+@mixin form-input {
+  padding: $spacing-md;
+  border: 2px solid $border-color;
+  border-radius: $border-radius-lg;
+  font-size: 1rem;
+  transition: border-color $transition-fast;
+  
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  }
+  
+  &.ng-invalid.ng-touched {
+    border-color: $danger-color;
+  }
+}
+
+// Grid Mixins
+@mixin responsive-grid($min-width: 280px) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($min-width, 1fr));
+  gap: $spacing-lg;
+}
+
+// Media Query Mixins
+@mixin mobile {
+  @media (max-width: $breakpoint-sm) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (max-width: $breakpoint-lg) {
+    @content;
+  }
+}

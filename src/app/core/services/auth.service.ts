@@ -2,14 +2,17 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { finalize, tap } from 'rxjs/operators';
 import { ToastService } from './toast.service';
-
-interface DecodedToken {
-  userId: number;
-  user_name: string;
-  role_id: number;
-  exp: number;
-  iat: number;
-}
+import { environment } from '../../../environments/environment';
+import { 
+  DecodedToken, 
+  LoginRequest, 
+  LoginResponse,
+  RegisterRequest, 
+  UpdateCredentialsRequest, 
+  AdminUpdateUserRequest,
+  User,
+  ApiResponse
+} from '../../shared/interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -17,7 +20,7 @@ export class AuthService {
   user = signal<DecodedToken | null>(null);
   loading = signal<boolean>(false);
 
-  private api = 'http://localhost:5001/api';
+  private api = environment.apiUrl;
 
   constructor(private http: HttpClient, private toastService: ToastService) {
     const decoded = this.getUserFromToken();
@@ -30,24 +33,24 @@ export class AuthService {
 
   login(user_name: string, password: string) {
     this.loading.set(true);
-    const loginRequest = this.http.post(`${this.api}/auth/login`, { user_name, password }, {
+    const loginData: LoginRequest = { user_name, password };
+    const loginRequest = this.http.post<LoginResponse>(`${this.api}/auth/login`, loginData, {
       withCredentials: true
     });
     
-    // Add finalize to always set loading to false
     return loginRequest.pipe(
       finalize(() => this.loading.set(false))
     );
   }
 
-  register(userData: { user_name: string; password: string; role_id: number; email?: string; phone?: string }) {
-    return this.http.post(`${this.api}/auth/register`, userData, {
+  register(userData: RegisterRequest) {
+    return this.http.post<ApiResponse<User>>(`${this.api}/auth/register`, userData, {
       withCredentials: true
     });
   }
 
   getUsers() {
-    return this.http.get(`${this.api}/users`, {
+    return this.http.get<ApiResponse<User[]>>(`${this.api}/users`, {
       withCredentials: true
     });
   }
@@ -59,13 +62,7 @@ export class AuthService {
   }
 
   // Staff updates own credentials (requires current password)
-  updateOwnCredentials(credentialsData: {
-    current_password: string;
-    new_password?: string;
-    user_name?: string;
-    email?: string;
-    phone?: string;
-  }) {
+  updateOwnCredentials(credentialsData: UpdateCredentialsRequest) {
     return this.http.put(`${this.api}/profile`, credentialsData, {
       withCredentials: true
     }).pipe(
@@ -98,13 +95,7 @@ export class AuthService {
   }
 
   // Admin updates any user's credentials (no current password needed)
-  adminUpdateCredentials(userId: number | string, updates: {
-    user_name?: string;
-    password?: string;
-    role_id?: number;
-    email?: string;
-    phone?: string;
-  }) {
+  adminUpdateCredentials(userId: number | string, updates: AdminUpdateUserRequest) {
     return this.http.put(`${this.api}/users/${userId}`, updates, {
       withCredentials: true
     });

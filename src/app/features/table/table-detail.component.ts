@@ -152,7 +152,7 @@ export class TableDetailComponent implements OnInit {
       id: backendData.table_id || this.tableId,
       number: parseInt(backendData.table_id.replace(/[^0-9]/g, '')) || parseInt(this.tableId),
       capacity: backendData.capacity || 4,
-      status: this.mapBackendStatus(backendData.is_occupied, backendData.table_status),
+      status: this.mapBackendStatus(backendData.is_occupied, backendData.is_reserved || false, backendData.table_status),
       serverName: backendData.server_name,
       customerCount: backendData.customer_count,
       customerName: backendData.customer_name,
@@ -164,8 +164,8 @@ export class TableDetailComponent implements OnInit {
     };
   }
 
-  mapBackendStatus(isOccupied: boolean, tableStatus: string): 'available' | 'occupied' | 'reserved' | 'cleaning' {
-    if (tableStatus === 'reserved') return 'reserved';
+  mapBackendStatus(isOccupied: boolean, isReserved: boolean, tableStatus: string): 'available' | 'occupied' | 'reserved' | 'cleaning' {
+    if (isReserved) return 'reserved';
     if (tableStatus === 'cleaning') return 'cleaning';
     return isOccupied ? 'occupied' : 'available';
   }

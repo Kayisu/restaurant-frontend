@@ -3,27 +3,16 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { RestaurantApiService } from '../../core/services/restaurant-api.service';
+import { Table, DashboardStats } from '../../shared/interfaces';
 
-interface TableData {
-  table_id: string;
-  capacity: number;
-  is_occupied: boolean;
-  table_status: string;
+// Extended interface for dashboard-specific table data
+interface TableData extends Table {
   server_name?: string;
   occupied_duration_minutes?: number;
   order_item_count?: number;
   total_amount?: number;
   customer_name?: string;
   customer_phone?: string;
-}
-
-interface DashboardStats {
-  total_tables: number;
-  available_tables: number;
-  occupied_tables: number;
-  reserved_tables: number;
-  total_revenue: number;
-  active_orders: number;
 }
 
 @Component({
@@ -114,8 +103,9 @@ interface DashboardStats {
           <div 
             class="table-card" 
             *ngFor="let table of currentSectionTables"
-            [class.available]="!table.is_occupied"
+            [class.available]="!table.is_occupied && !table.is_reserved"
             [class.occupied]="table.is_occupied"
+            [class.reserved]="table.is_reserved"
             (click)="selectTable(table)"
           >
             <div class="table-header">
@@ -162,6 +152,26 @@ export class DashboardComponent implements OnInit {
 
   // Math nesnesini template'te kullanabilmek için
   Math = Math;
+  
+  // Store scroll position for section navigation
+  private scrollPosition = 0;
+  
+  // Method to preserve scroll position during section changes
+  private preserveScrollPosition(callback: () => void) {
+    const currentScroll = window.scrollY;
+    const documentHeight = document.documentElement.scrollHeight;
+    const windowHeight = window.innerHeight;
+    
+    callback();
+    this.cdr.detectChanges();
+    
+    // Only restore scroll if we were actually scrolled down
+    if (currentScroll > 0 && currentScroll < documentHeight - windowHeight) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScroll);
+      });
+    }
+  }
 
   constructor(
     private router: Router,
@@ -173,6 +183,8 @@ export class DashboardComponent implements OnInit {
   ngOnInit() {
     this.loadDashboardData();
   }
+
+
 
   loadDashboardData() {
     this.loading = true;
@@ -275,6 +287,7 @@ export class DashboardComponent implements OnInit {
   }
 
   getStatusText(table: TableData): string {
+    if (table.is_reserved) return 'Reserved';
     return table.is_occupied ? 'Occupied' : 'Available';
   }
 

@@ -48,42 +48,6 @@ import { CommonModule } from '@angular/common';
             Start New Order
           </button>
         </div>
-
-        <!-- Future: Order creation interface will be here -->
-        <!-- 
-        <div class="order-form">
-          <div class="menu-categories">
-            <button class="category-btn" *ngFor="let category of menuCategories">
-              {{ category.name }}
-            </button>
-          </div>
-          
-          <div class="menu-items">
-            <div class="menu-item" *ngFor="let item of currentCategoryItems">
-              <div class="item-info">
-                <h4>{{ item.name }}</h4>
-                <p>{{ item.description }}</p>
-                <span class="item-price">₺{{ item.price }}</span>
-              </div>
-              <button class="add-btn">Add to Order</button>
-            </div>
-          </div>
-          
-          <div class="current-order">
-            <h3>Current Order</h3>
-            <div class="order-items">
-              <div class="order-item" *ngFor="let item of currentOrder">
-                <span>{{ item.name }} x{{ item.quantity }}</span>
-                <span>₺{{ item.total }}</span>
-              </div>
-            </div>
-            <div class="order-total">
-              Total: ₺{{ orderTotal }}
-            </div>
-            <button class="btn btn-success">Confirm Order</button>
-          </div>
-        </div>
-        -->
       </div>
     </div>
   `

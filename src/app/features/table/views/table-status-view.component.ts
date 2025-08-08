@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RestaurantApiService } from '../../../core/services/restaurant-api.service';
 import { ToastService } from '../../../core/services/toast.service';
+// import { firstValueFrom } from 'rxjs'; // istersen toPromise yerine bunu kullan
 
 interface TableInfo {
   id: string;
@@ -21,9 +22,7 @@ interface TableInfo {
 @Component({
   standalone: true,
   selector: 'app-table-status-view',
-  imports: [
-    CommonModule // Ensure CommonModule is imported for *ngIf
-  ],
+  imports: [CommonModule],
   styleUrl: './styles/table-status-view.component.scss',
   template: `
     <div class="table-status-container">
@@ -35,7 +34,6 @@ interface TableInfo {
       </div>
 
       <div class="table-info-grid" *ngIf="tableData">
-        <!-- Basic Table Info -->
         <div class="info-section">
           <h3>Table Information</h3>
           <div class="info-items">
@@ -54,7 +52,6 @@ interface TableInfo {
           </div>
         </div>
 
-        <!-- Empty State Message -->
         <div class="empty-state">
           <div class="empty-icon">📋</div>
           <h3>Data Being Prepared</h3>
@@ -62,13 +59,18 @@ interface TableInfo {
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div class="action-buttons" *ngIf="tableData">
         <button 
           class="btn btn-primary" 
           *ngIf="tableData.status === 'available'"
           (click)="seatCustomer()">
           🪑 Seat Customer
+        </button>
+        <button 
+          class="btn btn-secondary" 
+          *ngIf="tableData.status === 'available'"
+          (click)="reserveTable()">
+          📅 Reserve Table
         </button>
         <button 
           class="btn btn-warning" 
@@ -83,6 +85,12 @@ interface TableInfo {
           ✅ Clear Table
         </button>
         <button 
+          class="btn btn-danger" 
+          *ngIf="tableData.status === 'reserved'"
+          (click)="cancelReservation()">
+          ❌ Cancel Reservation
+        </button>
+        <button 
           class="btn btn-info"
           (click)="changeServer()">
           👥 Change Server
@@ -92,84 +100,123 @@ interface TableInfo {
   `
 })
 export class TableStatusViewComponent {
-  @Input() tableInfo: TableInfo | null = null;
+  // DIKKAT: Artık dışarıdan geleni doğrudan kullanmıyoruz.
+  private _table = signal<TableInfo | null>(null);
+
+  @Input() set tableInfo(value: TableInfo | null) {
+    // referansı mutasyona uğratmamak için shallow copy
+    this._table.set(value ? { ...value } : null);
+  }
+
+  get tableData(): TableInfo | null {
+    return this._table();
+  }
 
   constructor(
     private restaurantApi: RestaurantApiService,
     private toastService: ToastService
   ) {}
 
-  get tableData(): TableInfo | null {
-    return this.tableInfo;
-  }
-
   getStatusClass(): string {
-    if (!this.tableData) return 'available';
-    return this.tableData.status;
+    const t = this._table();
+    return t?.status ?? 'available';
   }
 
   getStatusText(): string {
-    if (!this.tableData) return 'Available';
-    
-    const statusMap = {
-      'available': 'Available',
-      'occupied': 'Occupied',
-      'reserved': 'Reserved',
-      'cleaning': 'Cleaning'
-    };
-    
-    return statusMap[this.tableData.status] || 'Unknown';
+    const t = this._table();
+    if (!t) return 'Available';
+    const map = {
+      available: 'Available',
+      occupied: 'Occupied',
+      reserved: 'Reserved',
+      cleaning: 'Cleaning'
+    } as const;
+    return map[t.status] ?? 'Unknown';
   }
 
   async seatCustomer(): Promise<void> {
-    if (!this.tableData) return;
-
+    const t = this._table();
+    if (!t) return;
     try {
-      const response = await this.restaurantApi.updateTableStatus(this.tableData.id, {
-        is_occupied: true
-      }).toPromise();
-
+      // const response = await firstValueFrom(this.restaurantApi.updateTableStatus(t.id, { is_occupied: true }));
+      const response = await this.restaurantApi.updateTableStatus(t.id, { is_occupied: true }).toPromise();
       if (response?.success) {
-        this.tableData.status = 'occupied';
-        this.toastService.success('Table Occupied', `Table ${this.tableData.number} is now occupied`);
+        this._table.update(x => x ? { ...x, status: 'occupied' } : x);
+        this.toastService.success('Table Occupied', `Table ${t.number} is now occupied`);
       } else {
         throw new Error('Backend response failed');
       }
-    } catch (error) {
-      console.warn('Backend not available, updating local state only');
-      this.tableData.status = 'occupied';
-      this.toastService.info('Local Update', `Table ${this.tableData.number} marked as occupied (local only)`);
+    } catch {
+      this._table.update(x => x ? { ...x, status: 'occupied' } : x);
+      this.toastService.info('Local Update', `Table ${t.number} marked as occupied (local only)`);
     }
   }
 
   async clearTable(): Promise<void> {
-    if (!this.tableData) return;
-
+    const t = this._table();
+    if (!t) return;
     try {
-      const response = await this.restaurantApi.updateTableStatus(this.tableData.id, {
-        is_occupied: false
-      }).toPromise();
-
+      // const response = await firstValueFrom(this.restaurantApi.updateTableStatus(t.id, { is_occupied: false }));
+      const response = await this.restaurantApi.updateTableStatus(t.id, { is_occupied: false }).toPromise();
       if (response?.success) {
-        this.tableData.status = 'available';
-        this.toastService.success('Table Cleared', `Table ${this.tableData.number} is now available`);
+        this._table.update(x => x ? { ...x, status: 'available' } : x);
+        this.toastService.success('Table Cleared', `Table ${t.number} is now available`);
       } else {
         throw new Error('Backend response failed');
       }
-    } catch (error) {
-      console.warn('Backend not available, updating local state only');
-      this.tableData.status = 'available';
-      this.toastService.info('Local Update', `Table ${this.tableData.number} marked as available (local only)`);
+    } catch {
+      this._table.update(x => x ? { ...x, status: 'available' } : x);
+      this.toastService.info('Local Update', `Table ${t.number} marked as available (local only)`);
     }
   }
 
   generateBill(): void {
-    if (!this.tableData) return;
-    this.toastService.info('Generate Bill', `Bill generation for Table ${this.tableData.number} - Coming soon!`);
+    const t = this._table();
+    if (!t) return;
+    this.toastService.info('Generate Bill', `Bill generation for Table ${t.number} - Coming soon!`);
   }
 
   changeServer(): void {
-    if (!this.tableData) return;
-    this.toastService.info('Change Server', `Server assignment for Table ${this.tableData.number} - Coming soon!`);
+    const t = this._table();
+    if (!t) return;
+    this.toastService.info('Change Server', `Server assignment for Table ${t.number} - Coming soon!`);
+  }
+
+  async reserveTable(): Promise<void> {
+    const t = this._table();
+    if (!t) return;
+    try {
+      const response = await this.restaurantApi.updateTableReservationStatus(t.id, { 
+        is_reserved: true 
+      }).toPromise();
+      if (response?.success) {
+        this._table.update(x => x ? { ...x, status: 'reserved' } : x);
+        this.toastService.success('Table Reserved', `Table ${t.number} has been reserved`);
+      } else {
+        throw new Error('Backend response failed');
+      }
+    } catch {
+      this._table.update(x => x ? { ...x, status: 'reserved' } : x);
+      this.toastService.info('Local Update', `Table ${t.number} marked as reserved (local only)`);
+    }
+  }
+
+  async cancelReservation(): Promise<void> {
+    const t = this._table();
+    if (!t) return;
+    try {
+      const response = await this.restaurantApi.updateTableReservationStatus(t.id, { 
+        is_reserved: false 
+      }).toPromise();
+      if (response?.success) {
+        this._table.update(x => x ? { ...x, status: 'available' } : x);
+        this.toastService.success('Reservation Cancelled', `Table ${t.number} is now available`);
+      } else {
+        throw new Error('Backend response failed');
+      }
+    } catch {
+      this._table.update(x => x ? { ...x, status: 'available' } : x);
+      this.toastService.info('Local Update', `Table ${t.number} reservation cancelled (local only)`);
+    }
   }
 }

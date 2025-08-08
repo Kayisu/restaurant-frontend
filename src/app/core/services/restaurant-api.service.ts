@@ -1,12 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { 
+  Table, 
+  TableSection, 
+  TableStatus, 
+  DashboardStats, 
+  SectionSummary, 
+  Order, 
+  CreateOrderRequest,
+  ApiResponse,
+  PaginatedResponse 
+} from '../../shared/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RestaurantApiService {
-  private readonly baseUrl = 'http://localhost:5001/api';
+  private readonly baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -78,47 +90,51 @@ export class RestaurantApiService {
   // TABLE API METHODS
   // =================================
 
-  getTables(): Observable<any> {
-    return this.get('/tables');
+  getTables(): Observable<ApiResponse<Table[]>> {
+    return this.get<ApiResponse<Table[]>>('/tables');
   }
 
-  getDashboardStats(): Observable<any> {
-    return this.get('/tables/dashboard/stats');
+  getDashboardStats(): Observable<ApiResponse<DashboardStats>> {
+    return this.get<ApiResponse<DashboardStats>>('/tables/dashboard/stats');
   }
 
-  getTableSections(): Observable<any> {
-    return this.get('/tables/sections');
+  getTableSections(): Observable<ApiResponse<TableSection[]>> {
+    return this.get<ApiResponse<TableSection[]>>('/tables/sections');
   }
 
-  getSectionSummary(lang: string = 'tr'): Observable<any> {
-    return this.get('/tables/sections/summary', { lang });
+  getSectionSummary(lang: string = 'tr'): Observable<ApiResponse<SectionSummary[]>> {
+    return this.get<ApiResponse<SectionSummary[]>>('/tables/sections/summary', { lang });
   }
 
-  getSectionTables(sectionCode: string): Observable<any> {
-    return this.get(`/tables/sections/${sectionCode}`);
+  getSectionTables(sectionCode: string): Observable<ApiResponse<Table[]>> {
+    return this.get<ApiResponse<Table[]>>(`/tables/sections/${sectionCode}`);
   }
 
-  getTableById(tableId: string): Observable<any> {
-    return this.get(`/tables/${tableId}`);
+  getTableById(tableId: string): Observable<ApiResponse<Table>> {
+    return this.get<ApiResponse<Table>>(`/tables/${tableId}`);
   }
 
-  getTableDetails(tableId: string): Observable<any> {
-    return this.get(`/tables/${tableId}/details`);
+  getTableDetails(tableId: string): Observable<ApiResponse<Table>> {
+    return this.get<ApiResponse<Table>>(`/tables/${tableId}/details`);
   }
 
-  updateTableStatus(tableId: string, status: { is_occupied: boolean; assigned_server?: string }): Observable<any> {
-    return this.put(`/tables/${tableId}/status`, status);
+  updateTableStatus(tableId: string, status: TableStatus): Observable<ApiResponse<Table>> {
+    return this.put<ApiResponse<Table>>(`/tables/${tableId}/status`, status);
   }
 
-  getTableOrders(tableId: string): Observable<any> {
-    return this.get(`/tables/${tableId}/orders`);
+  updateTableReservationStatus(tableId: string, reservationData: { is_reserved: boolean; assigned_server?: string }): Observable<ApiResponse<Table>> {
+    return this.put<ApiResponse<Table>>(`/tables/${tableId}/reservation`, reservationData);
   }
 
-  createTableOrder(tableId: string, orderData: any): Observable<any> {
-    return this.post(`/tables/${tableId}/orders`, orderData);
+  getTableOrders(tableId: string): Observable<ApiResponse<Order[]>> {
+    return this.get<ApiResponse<Order[]>>(`/tables/${tableId}/orders`);
   }
 
-  getActiveTableOrder(tableId: string): Observable<any> {
-    return this.get(`/tables/${tableId}/orders/active`);
+  createTableOrder(tableId: string, orderData: CreateOrderRequest): Observable<ApiResponse<Order>> {
+    return this.post<ApiResponse<Order>>(`/tables/${tableId}/orders`, orderData);
+  }
+
+  getActiveTableOrder(tableId: string): Observable<ApiResponse<Order>> {
+    return this.get<ApiResponse<Order>>(`/tables/${tableId}/orders/active`);
   }
 }
